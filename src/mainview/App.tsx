@@ -120,6 +120,9 @@ function App() {
 			const folder = await promptStoreApi.createFolder(name, selectedFolderId);
 			setFolders((current) => [...current, folder].sort(sortFolders));
 			setSelectedFolderId(folder.id);
+			setSelectedPrompt(null);
+			setDraftTitle("");
+			setDraftBody("");
 			setStatusMessage(`Created folder "${folder.name}"`);
 		} catch (error) {
 			setErrorMessage(toMessage(error));
@@ -216,6 +219,29 @@ function App() {
 				setDraftBody("");
 			}
 			setStatusMessage(`Deleted prompt "${selectedPrompt.title}"`);
+		} catch (error) {
+			setErrorMessage(toMessage(error));
+		}
+	}
+
+	async function renamePrompt() {
+		if (!selectedPrompt) {
+			return;
+		}
+
+		const title = window.prompt("Rename prompt", selectedPrompt.title);
+		if (!title) {
+			return;
+		}
+
+		try {
+			const renamed = await promptStoreApi.renamePrompt(selectedPrompt.id, title);
+			setSelectedPrompt(renamed);
+			setDraftTitle(renamed.title);
+			setPromptSummaries((current) =>
+				replacePromptSummary(current, summarizePrompt(renamed)),
+			);
+			setStatusMessage(`Renamed prompt to "${renamed.title}"`);
 		} catch (error) {
 			setErrorMessage(toMessage(error));
 		}
@@ -361,6 +387,9 @@ function App() {
 						<div className="editor-actions">
 							<button className="button" disabled={!selectedPrompt} onClick={() => void copyPrompt()}>
 								Copy
+							</button>
+							<button className="button" disabled={!selectedPrompt} onClick={() => void renamePrompt()}>
+								Rename
 							</button>
 							<button className="button button--danger" disabled={!selectedPrompt} onClick={() => void deletePrompt()}>
 								Delete
