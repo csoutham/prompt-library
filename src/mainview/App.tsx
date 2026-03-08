@@ -400,6 +400,20 @@ function App() {
 					{selectedPrompt ? (
 						<div className="editor-layout">
 							<div className="editor-pane">
+								<div className="editor-meta">
+									<div>
+										<span className="editor-meta__label">Folder</span>
+										<strong>{folderNameFor(selectedPrompt.folderId, folders)}</strong>
+									</div>
+									<div>
+										<span className="editor-meta__label">Created</span>
+										<strong>{formatDateTime(selectedPrompt.createdAt)}</strong>
+									</div>
+									<div>
+										<span className="editor-meta__label">Updated</span>
+										<strong>{formatDateTime(selectedPrompt.updatedAt)}</strong>
+									</div>
+								</div>
 								<label className="editor-field">
 									<span>Title</span>
 									<input value={draftTitle} onChange={(event) => setDraftTitle(event.target.value)} />
@@ -497,6 +511,16 @@ function formatTimestamp(value: string): string {
 	return new Date(value).toLocaleDateString([], {
 		month: "short",
 		day: "numeric",
+	});
+}
+
+function formatDateTime(value: string): string {
+	return new Date(value).toLocaleString([], {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
 	});
 }
 

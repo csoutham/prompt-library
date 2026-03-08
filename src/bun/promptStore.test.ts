@@ -59,6 +59,27 @@ describe("PromptStore", () => {
 		);
 	});
 
+	test("renames prompts and updates timestamps", async () => {
+		const store = new PromptStore(rootDir);
+		const folder = (await store.listFolders())[0]!;
+		const prompt = await store.createPrompt(folder.id, "Draft");
+		const renamed = await store.renamePrompt(prompt.id, "Final Draft");
+
+		expect(renamed.title).toBe("Final Draft");
+		expect(new Date(renamed.updatedAt).getTime()).toBeGreaterThanOrEqual(
+			new Date(prompt.updatedAt).getTime(),
+		);
+	});
+
+	test("deletes an empty folder", async () => {
+		const store = new PromptStore(rootDir);
+		const folder = await store.createFolder("Archive", null);
+		await store.deleteFolder(folder.id);
+
+		const folders = await store.listFolders();
+		expect(folders.some((entry) => entry.id === folder.id)).toBe(false);
+	});
+
 	test("skips invalid prompt files without crashing", async () => {
 		const store = new PromptStore(rootDir);
 		await store.bootstrap();
