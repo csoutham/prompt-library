@@ -1,7 +1,9 @@
 import { BrowserWindow, Utils, Updater } from "electrobun/bun";
+import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PromptStore, PromptStoreError } from "./promptStore";
 import { createBunRpc } from "./rpc";
+import type { PromptLibrarySnapshot } from "../shared/prompt-store";
 
 const DEV_SERVER_PORT = 5173;
 const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`;
@@ -53,6 +55,40 @@ const rpc = createBunRpc({
 		}
 		Utils.clipboardWriteText(prompt.bodyMarkdown);
 		return { copied: true as const };
+	},
+	exportLibrary: async () => {
+		const [directory] = await Utils.openFileDialog({
+			canChooseFiles: false,
+			canChooseDirectory: true,
+			allowsMultipleSelection: false,
+		});
+		if (!directory) {
+			return { filePath: null };
+		}
+
+		const snapshot = await store.exportSnapshot();
+		const filePath = join(
+			directory,
+			`prompt-store-export-${snapshot.exportedAt.slice(0, 10)}.json`,
+		);
+		await writeFile(filePath, JSON.stringify(snapshot, null, 2));
+		return { filePath };
+	},
+	importLibrary: async () => {
+		const [filePath] = await Utils.openFileDialog({
+			canChooseFiles: true,
+			canChooseDirectory: false,
+			allowsMultipleSelection: false,
+			allowedFileTypes: "json",
+		});
+		if (!filePath) {
+			return { imported: false };
+		}
+
+		const raw = await Bun.file(filePath).text();
+		const snapshot = JSON.parse(raw) as PromptLibrarySnapshot;
+		await store.importSnapshot(snapshot);
+		return { imported: true as const };
 	},
 });
 

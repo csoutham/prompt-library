@@ -23,4 +23,6 @@ export const promptStoreApi = {
 	deletePrompt: (promptId: string) => rpc.request.deletePrompt({ promptId }),
 	searchPrompts: (query: string) => rpc.request.searchPrompts({ query }),
 	copyPrompt: (promptId: string) => rpc.request.copyPrompt({ promptId }),
+	exportLibrary: () => rpc.request.exportLibrary(),
+	importLibrary: () => rpc.request.importLibrary(),
 };

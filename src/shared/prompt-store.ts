@@ -24,6 +24,13 @@ export type BootstrapPayload = {
 	prompts: PromptSummary[];
 };
 
+export type PromptLibrarySnapshot = {
+	version: 1;
+	exportedAt: string;
+	folders: FolderRecord[];
+	prompts: PromptRecord[];
+};
+
 export type PromptStoreRpcSchema = {
 	bun: {
 		requests: {
@@ -82,6 +89,14 @@ export type PromptStoreRpcSchema = {
 			copyPrompt: {
 				params: { promptId: string };
 				response: { copied: true };
+			};
+			exportLibrary: {
+				params: undefined;
+				response: { filePath: string | null };
+			};
+			importLibrary: {
+				params: undefined;
+				response: { imported: boolean };
 			};
 		};
 		messages: {};

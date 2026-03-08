@@ -101,4 +101,25 @@ describe("PromptStore", () => {
 		expect(parsed.data.title).toBe("Spec");
 		expect(parsed.content.trim()).toBe("## Body");
 	});
+
+	test("exports and reimports a library snapshot", async () => {
+		const store = new PromptStore(rootDir);
+		const folder = await store.createFolder("Imported", null);
+		const prompt = await store.createPrompt(folder.id, "Reusable");
+		await store.savePrompt(prompt.id, "Reusable", "Body");
+
+		const snapshot = await store.exportSnapshot();
+
+		const nextRoot = await mkdtemp(join(tmpdir(), "prompt-store-import-"));
+		try {
+			const importedStore = new PromptStore(nextRoot);
+			await importedStore.importSnapshot(snapshot);
+			const bootstrap = await importedStore.bootstrap();
+
+			expect(bootstrap.folders.some((entry) => entry.name === "Imported")).toBe(true);
+			expect(bootstrap.prompts.some((entry) => entry.title === "Reusable")).toBe(true);
+		} finally {
+			await rm(nextRoot, { recursive: true, force: true });
+		}
+	});
 });

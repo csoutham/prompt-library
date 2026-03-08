@@ -1,10 +1,10 @@
 # Prompt Store
 
-`v0.1.0`
+`v0.2.0`
 
 Prompt Store is a local-first macOS desktop app for collecting AI prompts in folders. It is built with Electrobun, Bun, React, and a file-backed Markdown store so prompts stay readable and portable on disk.
 
-## What ships in v0.1.0
+## What ships in v0.2.0
 
 - Folder tree with nested folders
 - Prompt list for the current folder
@@ -12,6 +12,8 @@ Prompt Store is a local-first macOS desktop app for collecting AI prompts in fol
 - Search across prompt titles and body text
 - Autosave on edit
 - Copy prompt content to the clipboard
+- Import library from a JSON export
+- Export library to a JSON snapshot
 - File-backed local storage under the app's user-data directory
 
 ## Development

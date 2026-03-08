@@ -306,6 +306,31 @@ function App() {
 		}
 	}
 
+	async function exportLibrary() {
+		try {
+			const result = await promptStoreApi.exportLibrary();
+			if (!result.filePath) {
+				return;
+			}
+			setStatusMessage(`Exported library to ${result.filePath}`);
+		} catch (error) {
+			setErrorMessage(toMessage(error));
+		}
+	}
+
+	async function importLibrary() {
+		try {
+			const result = await promptStoreApi.importLibrary();
+			if (!result.imported) {
+				return;
+			}
+			await loadInitialState();
+			setStatusMessage("Imported library snapshot");
+		} catch (error) {
+			setErrorMessage(toMessage(error));
+		}
+	}
+
 	async function handleSearchChange(query: string) {
 		setSearchQuery(query);
 		setErrorMessage(null);
@@ -440,6 +465,12 @@ function App() {
 							}
 						>
 							Delete
+						</button>
+						<button className="button" onClick={() => void exportLibrary()}>
+							Export
+						</button>
+						<button className="button" onClick={() => void importLibrary()}>
+							Import
 						</button>
 					</div>
 

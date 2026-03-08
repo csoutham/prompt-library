@@ -4,6 +4,7 @@ import matter from "gray-matter";
 import type {
 	BootstrapPayload,
 	FolderRecord,
+	PromptLibrarySnapshot,
 	PromptRecord,
 	PromptSummary,
 } from "../shared/prompt-store";
@@ -207,6 +208,31 @@ export class PromptStore {
 			.map(toPromptSummary);
 	}
 
+	async exportSnapshot(): Promise<PromptLibrarySnapshot> {
+		await this.ensureInitialized();
+		const [folders, prompts] = await Promise.all([
+			this.readFolders(),
+			this.listAllPrompts(),
+		]);
+
+		return {
+			version: 1,
+			exportedAt: new Date().toISOString(),
+			folders,
+			prompts,
+		};
+	}
+
+	async importSnapshot(snapshot: PromptLibrarySnapshot): Promise<void> {
+		await this.ensureInitialized();
+		validateSnapshot(snapshot);
+
+		await rm(this.promptsDir, { recursive: true, force: true });
+		await mkdir(this.promptsDir, { recursive: true });
+		await this.writeFolders(snapshot.folders);
+		await Promise.all(snapshot.prompts.map((prompt) => this.writePromptFile(prompt)));
+	}
+
 	private async ensureInitialized(): Promise<void> {
 		await mkdir(this.promptsDir, { recursive: true });
 		const hasFolders = await this.exists(this.foldersPath);
@@ -379,4 +405,21 @@ function isMissingFile(error: unknown): boolean {
 		"code" in error &&
 		error.code === "ENOENT"
 	);
+}
+
+function validateSnapshot(snapshot: PromptLibrarySnapshot): void {
+	if (snapshot.version !== 1) {
+		throw new PromptStoreError("Unsupported import format.");
+	}
+
+	if (snapshot.folders.length === 0) {
+		throw new PromptStoreError("Import file does not contain any folders.");
+	}
+
+	const folderIds = new Set(snapshot.folders.map((folder) => folder.id));
+	for (const prompt of snapshot.prompts) {
+		if (!folderIds.has(prompt.folderId)) {
+			throw new PromptStoreError("Import file contains prompts with missing folders.");
+		}
+	}
 }
