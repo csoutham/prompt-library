@@ -1,6 +1,6 @@
 {
 	"name": "prompt-store",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"description": "Local-first macOS prompt manager built with Electrobun, Bun, and React",
 	"scripts": {
 		"start": "vite build && electrobun dev",

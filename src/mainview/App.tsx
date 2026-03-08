@@ -3,9 +3,9 @@ import {
 	ArrowBendUpRight,
 	Copy,
 	DownloadSimple,
-	FilePlus,
 	FolderPlus,
 	PencilSimple,
+	Keyboard,
 	Trash,
 	UploadSimple,
 } from "@phosphor-icons/react";
@@ -41,14 +41,6 @@ type DialogState =
 			folderId: string;
 	  }
 	| {
-			type: "rename-prompt";
-			title: string;
-			description: string;
-			submitLabel: string;
-			initialValue: string;
-			promptId: string;
-	  }
-	| {
 			type: "delete-prompt";
 			title: string;
 			description: string;
@@ -57,6 +49,12 @@ type DialogState =
 	  }
 	| {
 			type: "import-library";
+			title: string;
+			description: string;
+			submitLabel: string;
+	  }
+	| {
+			type: "shortcuts";
 			title: string;
 			description: string;
 			submitLabel: string;
@@ -318,19 +316,6 @@ function App() {
 					setStatusMessage("Deleted folder");
 					break;
 				}
-				case "rename-prompt": {
-					const renamed = await promptStoreApi.renamePrompt(
-						dialog.promptId,
-						dialogValue,
-					);
-					setSelectedPrompt(renamed);
-					setDraftTitle(renamed.title);
-					setPromptSummaries((current) =>
-						replacePromptSummary(current, summarizePrompt(renamed)),
-					);
-					setStatusMessage(`Renamed prompt to "${renamed.title}"`);
-					break;
-				}
 				case "delete-prompt": {
 					await promptStoreApi.deletePrompt(dialog.promptId);
 					const nextSummaries = promptSummaries.filter(
@@ -362,6 +347,9 @@ function App() {
 					setStatusMessage("Imported library snapshot");
 					break;
 				}
+				case "shortcuts":
+					closeDialog();
+					return;
 			}
 
 			closeDialog();
@@ -479,6 +467,21 @@ function App() {
 					<h1>Local prompt library</h1>
 				</div>
 				<div className="app-topbar__meta">
+					<button
+						className="button button--icon"
+						aria-label="Show shortcuts"
+						title="Show shortcuts"
+						onClick={() =>
+							openDialog({
+								type: "shortcuts",
+								title: "Keyboard shortcuts",
+								description: "Quick actions for moving through the library.",
+								submitLabel: "Close",
+							})
+						}
+					>
+						<Keyboard className="button__icon-svg" aria-hidden="true" weight="duotone" />
+					</button>
 					<div className="topbar-pill">
 						<span>Folders</span>
 						<strong>{folders.length}</strong>
@@ -495,49 +498,6 @@ function App() {
 			</header>
 			<div className="app-frame">
 				<aside className="sidebar">
-					<div className="sidebar__masthead">
-						<p className="eyebrow">Prompt Store</p>
-						<h1>Quietly local. Fast to reach.</h1>
-						<p className="sidebar__lede">
-							A lightweight library for prompts you want to keep close and searchable.
-						</p>
-					</div>
-
-					<div className="sidebar__stats">
-						<div className="sidebar-stat">
-							<span>Open folder</span>
-							<strong>{selectedFolder?.name ?? "Library"}</strong>
-						</div>
-						<div className="sidebar-stat">
-							<span>Visible prompts</span>
-							<strong>{visiblePrompts.length}</strong>
-						</div>
-					</div>
-
-					<div className="shortcut-card">
-						<p className="eyebrow">Shortcuts</p>
-						<div className="shortcut-card__row">
-							<span>Search</span>
-							<kbd>Cmd F</kbd>
-						</div>
-						<div className="shortcut-card__row">
-							<span>New prompt</span>
-							<kbd>Cmd N</kbd>
-						</div>
-						<div className="shortcut-card__row">
-							<span>New folder</span>
-							<kbd>Cmd Shift N</kbd>
-						</div>
-						<div className="shortcut-card__row">
-							<span>Save</span>
-							<kbd>Cmd S</kbd>
-						</div>
-						<div className="shortcut-card__row">
-							<span>Dismiss dialog</span>
-							<kbd>Esc</kbd>
-						</div>
-					</div>
-
 					<div className="sidebar__controls">
 						<button
 							className="button button--primary"
@@ -649,21 +609,12 @@ function App() {
 
 				<section className="prompt-list-panel">
 					<div className="panel-header">
-						<div>
-							<p className="eyebrow">
-								{searchQuery ? "Search Results" : selectedFolder?.name ?? "Library"}
-							</p>
-							<h2>{visiblePrompts.length} prompts</h2>
-							<p className="panel-copy">
-								Skim reusable instructions, sort them fast, and drop into the editor when needed.
-							</p>
-						</div>
+						<h2>{searchQuery ? "Search Results" : selectedFolder?.name ?? "Library"}</h2>
 						<button
 							className="button button--primary"
 							disabled={!selectedFolderId}
 							onClick={() => void createPrompt()}
 						>
-							<FilePlus className="button__icon-inline" aria-hidden="true" weight="duotone" />
 							New Prompt
 						</button>
 					</div>
@@ -682,43 +633,6 @@ function App() {
 								<option value="title">Title</option>
 							</select>
 						</label>
-						<button
-							className="button button--icon"
-							disabled={!selectedPrompt}
-							aria-label="Rename prompt"
-							title="Rename prompt"
-							onClick={() =>
-								selectedPrompt &&
-								openDialog({
-									type: "rename-prompt",
-									title: "Rename prompt",
-									description: "Update the prompt title.",
-									submitLabel: "Rename Prompt",
-									initialValue: selectedPrompt.title,
-									promptId: selectedPrompt.id,
-								})
-							}
-						>
-							<PencilSimple className="button__icon-svg" aria-hidden="true" weight="duotone" />
-						</button>
-						<button
-							className="button button--icon button--danger"
-							disabled={!selectedPrompt}
-							aria-label="Delete prompt"
-							title="Delete prompt"
-							onClick={() =>
-								selectedPrompt &&
-								openDialog({
-									type: "delete-prompt",
-									title: "Delete prompt",
-									description: `Delete "${selectedPrompt.title}". This cannot be undone.`,
-									submitLabel: "Delete Prompt",
-									promptId: selectedPrompt.id,
-								})
-							}
-						>
-							<Trash className="button__icon-svg" aria-hidden="true" weight="duotone" />
-						</button>
 					</div>
 
 					<label className="search-field">
@@ -779,9 +693,6 @@ function App() {
 						<div>
 							<p className="eyebrow">Editor</p>
 							<h2>{selectedPrompt?.title ?? "Select a prompt"}</h2>
-							<p className="panel-copy">
-								Write in Markdown, keep the structure lightweight, and preview the final result beside it.
-							</p>
 						</div>
 						<div className="editor-actions">
 							<button
@@ -792,6 +703,24 @@ function App() {
 								onClick={() => void copyPrompt()}
 							>
 								<Copy className="button__icon-svg" aria-hidden="true" weight="duotone" />
+							</button>
+							<button
+								className="button button--icon button--danger"
+								disabled={!selectedPrompt}
+								aria-label="Delete prompt"
+								title="Delete prompt"
+								onClick={() =>
+									selectedPrompt &&
+									openDialog({
+										type: "delete-prompt",
+										title: "Delete prompt",
+										description: `Delete "${selectedPrompt.title}". This cannot be undone.`,
+										submitLabel: "Delete Prompt",
+										promptId: selectedPrompt.id,
+									})
+								}
+							>
+								<Trash className="button__icon-svg" aria-hidden="true" weight="duotone" />
 							</button>
 						</div>
 					</div>
@@ -883,6 +812,31 @@ function App() {
 									}}
 								/>
 							</label>
+						) : null}
+
+						{dialog.type === "shortcuts" ? (
+							<div className="shortcut-list">
+								<div className="shortcut-card__row">
+									<span>Search</span>
+									<kbd>Cmd F</kbd>
+								</div>
+								<div className="shortcut-card__row">
+									<span>New prompt</span>
+									<kbd>Cmd N</kbd>
+								</div>
+								<div className="shortcut-card__row">
+									<span>New folder</span>
+									<kbd>Cmd Shift N</kbd>
+								</div>
+								<div className="shortcut-card__row">
+									<span>Save</span>
+									<kbd>Cmd S</kbd>
+								</div>
+								<div className="shortcut-card__row">
+									<span>Dismiss dialog</span>
+									<kbd>Esc</kbd>
+								</div>
+							</div>
 						) : null}
 
 						<div className="dialog-card__actions">
