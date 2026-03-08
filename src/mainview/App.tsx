@@ -8,6 +8,47 @@ import type {
 } from "../shared/prompt-store";
 import { promptStoreApi } from "./api";
 
+type DialogState =
+	| {
+			type: "create-folder";
+			title: string;
+			description: string;
+			submitLabel: string;
+			initialValue: string;
+			parentId: string | null;
+	  }
+	| {
+			type: "rename-folder";
+			title: string;
+			description: string;
+			submitLabel: string;
+			initialValue: string;
+			folderId: string;
+	  }
+	| {
+			type: "delete-folder";
+			title: string;
+			description: string;
+			submitLabel: string;
+			folderId: string;
+	  }
+	| {
+			type: "rename-prompt";
+			title: string;
+			description: string;
+			submitLabel: string;
+			initialValue: string;
+			promptId: string;
+	  }
+	| {
+			type: "delete-prompt";
+			title: string;
+			description: string;
+			submitLabel: string;
+			promptId: string;
+	  }
+	| null;
+
 function App() {
 	const [folders, setFolders] = useState<FolderRecord[]>([]);
 	const [promptSummaries, setPromptSummaries] = useState<PromptSummary[]>([]);
@@ -20,6 +61,9 @@ function App() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [statusMessage, setStatusMessage] = useState("Local library ready");
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [dialog, setDialog] = useState<DialogState>(null);
+	const [dialogValue, setDialogValue] = useState("");
+	const [isSubmittingDialog, setIsSubmittingDialog] = useState(false);
 
 	useEffect(() => {
 		void loadInitialState();
@@ -78,7 +122,9 @@ function App() {
 			const initialFolderId = payload.folders[0]?.id ?? null;
 			setSelectedFolderId(initialFolderId);
 
-			const initialPromptId = payload.prompts.find((prompt) => prompt.folderId === initialFolderId)?.id;
+			const initialPromptId = payload.prompts.find(
+				(prompt) => prompt.folderId === initialFolderId,
+			)?.id;
 			if (initialPromptId) {
 				const prompt = await promptStoreApi.getPrompt(initialPromptId);
 				setSelectedPrompt(prompt);
@@ -88,6 +134,16 @@ function App() {
 		} finally {
 			setIsLoading(false);
 		}
+	}
+
+	async function refreshFolder(folderId: string | null) {
+		if (!folderId) {
+			setSelectedPrompt(null);
+			return;
+		}
+
+		const prompts = await promptStoreApi.listPrompts(folderId);
+		setPromptSummaries((current) => mergePromptSummaries(current, prompts, folderId));
 	}
 
 	async function selectFolder(folderId: string) {
@@ -110,68 +166,111 @@ function App() {
 		setSelectedPrompt(prompt);
 	}
 
-	async function createFolder() {
-		const name = window.prompt("Folder name", "New Folder");
-		if (!name) {
+	function openDialog(nextDialog: DialogState) {
+		setDialog(nextDialog);
+		if (nextDialog && "initialValue" in nextDialog) {
+			setDialogValue(nextDialog.initialValue);
 			return;
 		}
-
-		try {
-			const folder = await promptStoreApi.createFolder(name, selectedFolderId);
-			setFolders((current) => [...current, folder].sort(sortFolders));
-			setSelectedFolderId(folder.id);
-			setSelectedPrompt(null);
-			setDraftTitle("");
-			setDraftBody("");
-			setStatusMessage(`Created folder "${folder.name}"`);
-		} catch (error) {
-			setErrorMessage(toMessage(error));
-		}
+		setDialogValue("");
 	}
 
-	async function renameFolder() {
-		if (!selectedFolder) {
-			return;
-		}
-
-		const name = window.prompt("Rename folder", selectedFolder.name);
-		if (!name) {
-			return;
-		}
-
-		try {
-			const folder = await promptStoreApi.renameFolder(selectedFolder.id, name);
-			setFolders((current) =>
-				current.map((entry) => (entry.id === folder.id ? folder : entry)).sort(sortFolders),
-			);
-			setStatusMessage(`Renamed folder to "${folder.name}"`);
-		} catch (error) {
-			setErrorMessage(toMessage(error));
-		}
+	function closeDialog() {
+		setDialog(null);
+		setDialogValue("");
+		setIsSubmittingDialog(false);
 	}
 
-	async function deleteFolder() {
-		if (!selectedFolder) {
+	async function submitDialog() {
+		if (!dialog) {
 			return;
 		}
 
-		const confirmed = window.confirm(`Delete folder "${selectedFolder.name}"?`);
-		if (!confirmed) {
-			return;
-		}
+		setIsSubmittingDialog(true);
+		setErrorMessage(null);
 
 		try {
-			await promptStoreApi.deleteFolder(selectedFolder.id);
-			const nextFolders = folders.filter((folder) => folder.id !== selectedFolder.id);
-			const fallbackFolder = nextFolders[0] ?? null;
-			setFolders(nextFolders);
-			setSelectedFolderId(fallbackFolder?.id ?? null);
-			setSelectedPrompt(null);
-			if (fallbackFolder) {
-				await selectFolder(fallbackFolder.id);
+			switch (dialog.type) {
+				case "create-folder": {
+					const folder = await promptStoreApi.createFolder(
+						dialogValue,
+						dialog.parentId,
+					);
+					setFolders((current) => [...current, folder].sort(sortFolders));
+					setSelectedFolderId(folder.id);
+					setSelectedPrompt(null);
+					setDraftTitle("");
+					setDraftBody("");
+					setStatusMessage(`Created folder "${folder.name}"`);
+					break;
+				}
+				case "rename-folder": {
+					const folder = await promptStoreApi.renameFolder(
+						dialog.folderId,
+						dialogValue,
+					);
+					setFolders((current) =>
+						current
+							.map((entry) => (entry.id === folder.id ? folder : entry))
+							.sort(sortFolders),
+					);
+					setStatusMessage(`Renamed folder to "${folder.name}"`);
+					break;
+				}
+				case "delete-folder": {
+					await promptStoreApi.deleteFolder(dialog.folderId);
+					const nextFolders = folders.filter(
+						(folder) => folder.id !== dialog.folderId,
+					);
+					const fallbackFolder = nextFolders[0] ?? null;
+					setFolders(nextFolders);
+					setSelectedFolderId(fallbackFolder?.id ?? null);
+					setSelectedPrompt(null);
+					setDraftTitle("");
+					setDraftBody("");
+					await refreshFolder(fallbackFolder?.id ?? null);
+					setStatusMessage("Deleted folder");
+					break;
+				}
+				case "rename-prompt": {
+					const renamed = await promptStoreApi.renamePrompt(
+						dialog.promptId,
+						dialogValue,
+					);
+					setSelectedPrompt(renamed);
+					setDraftTitle(renamed.title);
+					setPromptSummaries((current) =>
+						replacePromptSummary(current, summarizePrompt(renamed)),
+					);
+					setStatusMessage(`Renamed prompt to "${renamed.title}"`);
+					break;
+				}
+				case "delete-prompt": {
+					await promptStoreApi.deletePrompt(dialog.promptId);
+					const nextSummaries = promptSummaries.filter(
+						(prompt) => prompt.id !== dialog.promptId,
+					);
+					setPromptSummaries(nextSummaries);
+
+					const fallbackPromptId = nextSummaries.find(
+						(prompt) => prompt.folderId === selectedFolderId,
+					)?.id;
+					if (fallbackPromptId) {
+						const prompt = await promptStoreApi.getPrompt(fallbackPromptId);
+						setSelectedPrompt(prompt);
+					} else {
+						setSelectedPrompt(null);
+						setDraftTitle("");
+						setDraftBody("");
+					}
+					setStatusMessage("Deleted prompt");
+					break;
+				}
 			}
-			setStatusMessage(`Deleted folder "${selectedFolder.name}"`);
+
+			closeDialog();
 		} catch (error) {
+			setIsSubmittingDialog(false);
 			setErrorMessage(toMessage(error));
 		}
 	}
@@ -189,59 +288,6 @@ function App() {
 			setDraftTitle(prompt.title);
 			setDraftBody(prompt.bodyMarkdown);
 			setStatusMessage("Created prompt");
-		} catch (error) {
-			setErrorMessage(toMessage(error));
-		}
-	}
-
-	async function deletePrompt() {
-		if (!selectedPrompt) {
-			return;
-		}
-
-		const confirmed = window.confirm(`Delete prompt "${selectedPrompt.title}"?`);
-		if (!confirmed) {
-			return;
-		}
-
-		try {
-			await promptStoreApi.deletePrompt(selectedPrompt.id);
-			const nextSummaries = promptSummaries.filter((prompt) => prompt.id !== selectedPrompt.id);
-			setPromptSummaries(nextSummaries);
-
-			const nextPromptId = nextSummaries.find((prompt) => prompt.folderId === selectedPrompt.folderId)?.id;
-			if (nextPromptId) {
-				const prompt = await promptStoreApi.getPrompt(nextPromptId);
-				setSelectedPrompt(prompt);
-			} else {
-				setSelectedPrompt(null);
-				setDraftTitle("");
-				setDraftBody("");
-			}
-			setStatusMessage(`Deleted prompt "${selectedPrompt.title}"`);
-		} catch (error) {
-			setErrorMessage(toMessage(error));
-		}
-	}
-
-	async function renamePrompt() {
-		if (!selectedPrompt) {
-			return;
-		}
-
-		const title = window.prompt("Rename prompt", selectedPrompt.title);
-		if (!title) {
-			return;
-		}
-
-		try {
-			const renamed = await promptStoreApi.renamePrompt(selectedPrompt.id, title);
-			setSelectedPrompt(renamed);
-			setDraftTitle(renamed.title);
-			setPromptSummaries((current) =>
-				replacePromptSummary(current, summarizePrompt(renamed)),
-			);
-			setStatusMessage(`Renamed prompt to "${renamed.title}"`);
 		} catch (error) {
 			setErrorMessage(toMessage(error));
 		}
@@ -267,7 +313,9 @@ function App() {
 		if (!query.trim()) {
 			if (selectedFolderId) {
 				const prompts = await promptStoreApi.listPrompts(selectedFolderId);
-				setPromptSummaries((current) => mergePromptSummaries(current, prompts, selectedFolderId));
+				setPromptSummaries((current) =>
+					mergePromptSummaries(current, prompts, selectedFolderId),
+				);
 			}
 			return;
 		}
@@ -289,10 +337,21 @@ function App() {
 		setErrorMessage(null);
 
 		try {
-			const saved = await promptStoreApi.savePrompt(selectedPrompt.id, draftTitle, draftBody);
+			const saved = await promptStoreApi.savePrompt(
+				selectedPrompt.id,
+				draftTitle,
+				draftBody,
+			);
 			setSelectedPrompt(saved);
-			setPromptSummaries((current) => replacePromptSummary(current, summarizePrompt(saved)));
-			setStatusMessage(`Saved ${new Date(saved.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`);
+			setPromptSummaries((current) =>
+				replacePromptSummary(current, summarizePrompt(saved)),
+			);
+			setStatusMessage(
+				`Saved ${new Date(saved.updatedAt).toLocaleTimeString([], {
+					hour: "2-digit",
+					minute: "2-digit",
+				})}`,
+			);
 		} catch (error) {
 			setErrorMessage(toMessage(error));
 		} finally {
@@ -317,13 +376,69 @@ function App() {
 					</div>
 
 					<div className="sidebar__controls">
-						<button className="button button--primary" onClick={() => void createFolder()}>
+						<button
+							className="button button--primary"
+							onClick={() =>
+								openDialog({
+									type: "create-folder",
+									title: "New folder",
+									description: "Create a top-level folder for a new group of prompts.",
+									submitLabel: "Create Folder",
+									initialValue: "New Folder",
+									parentId: null,
+								})
+							}
+						>
 							New Folder
 						</button>
-						<button className="button" disabled={!selectedFolder} onClick={() => void renameFolder()}>
+						<button
+							className="button"
+							disabled={!selectedFolder}
+							onClick={() =>
+								selectedFolder &&
+								openDialog({
+									type: "create-folder",
+									title: "New subfolder",
+									description: `Create a child folder inside "${selectedFolder.name}".`,
+									submitLabel: "Create Subfolder",
+									initialValue: "New Folder",
+									parentId: selectedFolder.id,
+								})
+							}
+						>
+							New Subfolder
+						</button>
+						<button
+							className="button"
+							disabled={!selectedFolder}
+							onClick={() =>
+								selectedFolder &&
+								openDialog({
+									type: "rename-folder",
+									title: "Rename folder",
+									description: "Update the folder name.",
+									submitLabel: "Rename Folder",
+									initialValue: selectedFolder.name,
+									folderId: selectedFolder.id,
+								})
+							}
+						>
 							Rename
 						</button>
-						<button className="button button--danger" disabled={!selectedFolder} onClick={() => void deleteFolder()}>
+						<button
+							className="button button--danger"
+							disabled={!selectedFolder}
+							onClick={() =>
+								selectedFolder &&
+								openDialog({
+									type: "delete-folder",
+									title: "Delete folder",
+									description: `Delete "${selectedFolder.name}". Non-empty folders are blocked.`,
+									submitLabel: "Delete Folder",
+									folderId: selectedFolder.id,
+								})
+							}
+						>
 							Delete
 						</button>
 					</div>
@@ -336,11 +451,53 @@ function App() {
 				<section className="prompt-list-panel">
 					<div className="panel-header">
 						<div>
-							<p className="eyebrow">{searchQuery ? "Search Results" : selectedFolder?.name ?? "Library"}</p>
+							<p className="eyebrow">
+								{searchQuery ? "Search Results" : selectedFolder?.name ?? "Library"}
+							</p>
 							<h2>{visiblePrompts.length} prompts</h2>
 						</div>
-						<button className="button button--primary" disabled={!selectedFolderId} onClick={() => void createPrompt()}>
+						<button
+							className="button button--primary"
+							disabled={!selectedFolderId}
+							onClick={() => void createPrompt()}
+						>
 							New Prompt
+						</button>
+					</div>
+
+					<div className="prompt-list-toolbar">
+						<button
+							className="button"
+							disabled={!selectedPrompt}
+							onClick={() =>
+								selectedPrompt &&
+								openDialog({
+									type: "rename-prompt",
+									title: "Rename prompt",
+									description: "Update the prompt title.",
+									submitLabel: "Rename Prompt",
+									initialValue: selectedPrompt.title,
+									promptId: selectedPrompt.id,
+								})
+							}
+						>
+							Rename Prompt
+						</button>
+						<button
+							className="button button--danger"
+							disabled={!selectedPrompt}
+							onClick={() =>
+								selectedPrompt &&
+								openDialog({
+									type: "delete-prompt",
+									title: "Delete prompt",
+									description: `Delete "${selectedPrompt.title}". This cannot be undone.`,
+									submitLabel: "Delete Prompt",
+									promptId: selectedPrompt.id,
+								})
+							}
+						>
+							Delete Prompt
 						</button>
 					</div>
 
@@ -363,11 +520,15 @@ function App() {
 							visiblePrompts.map((prompt) => (
 								<button
 									key={prompt.id}
-									className={`prompt-card ${selectedPrompt?.id === prompt.id ? "prompt-card--active" : ""}`}
+									className={`prompt-card ${
+										selectedPrompt?.id === prompt.id ? "prompt-card--active" : ""
+									}`}
 									onClick={() => void selectPrompt(prompt.id)}
 								>
 									<div className="prompt-card__title">{prompt.title}</div>
-									<div className="prompt-card__excerpt">{prompt.excerpt || "Empty prompt"}</div>
+									<div className="prompt-card__excerpt">
+										{prompt.excerpt || "Empty prompt"}
+									</div>
 									<div className="prompt-card__meta">
 										<span>{folderNameFor(prompt.folderId, folders)}</span>
 										<span>{formatTimestamp(prompt.updatedAt)}</span>
@@ -385,14 +546,12 @@ function App() {
 							<h2>{selectedPrompt?.title ?? "Select a prompt"}</h2>
 						</div>
 						<div className="editor-actions">
-							<button className="button" disabled={!selectedPrompt} onClick={() => void copyPrompt()}>
+							<button
+								className="button"
+								disabled={!selectedPrompt}
+								onClick={() => void copyPrompt()}
+							>
 								Copy
-							</button>
-							<button className="button" disabled={!selectedPrompt} onClick={() => void renamePrompt()}>
-								Rename
-							</button>
-							<button className="button button--danger" disabled={!selectedPrompt} onClick={() => void deletePrompt()}>
-								Delete
 							</button>
 						</div>
 					</div>
@@ -416,7 +575,10 @@ function App() {
 								</div>
 								<label className="editor-field">
 									<span>Title</span>
-									<input value={draftTitle} onChange={(event) => setDraftTitle(event.target.value)} />
+									<input
+										value={draftTitle}
+										onChange={(event) => setDraftTitle(event.target.value)}
+									/>
 								</label>
 								<label className="editor-field editor-field--body">
 									<span>Markdown</span>
@@ -446,10 +608,63 @@ function App() {
 
 					<footer className="status-bar">
 						<span>{errorMessage ?? statusMessage}</span>
-						<span>{isSaving ? "Autosaving…" : selectedPrompt ? `Updated ${formatTimestamp(selectedPrompt.updatedAt)}` : "Idle"}</span>
+						<span>
+							{isSaving
+								? "Autosaving…"
+								: selectedPrompt
+									? `Updated ${formatTimestamp(selectedPrompt.updatedAt)}`
+									: "Idle"}
+						</span>
 					</footer>
 				</section>
 			</div>
+
+			{dialog ? (
+				<div className="dialog-scrim" onClick={() => closeDialog()}>
+					<div className="dialog-card" onClick={(event) => event.stopPropagation()}>
+						<p className="eyebrow">{dialog.title}</p>
+						<h3>{dialog.title}</h3>
+						<p className="dialog-card__description">{dialog.description}</p>
+
+						{"initialValue" in dialog ? (
+							<label className="editor-field">
+								<span>Name</span>
+								<input
+									autoFocus
+									value={dialogValue}
+									onChange={(event) => setDialogValue(event.target.value)}
+									onKeyDown={(event) => {
+										if (event.key === "Enter") {
+											event.preventDefault();
+											void submitDialog();
+										}
+									}}
+								/>
+							</label>
+						) : null}
+
+						<div className="dialog-card__actions">
+							<button className="button" onClick={() => closeDialog()}>
+								Cancel
+							</button>
+							<button
+								className={`button ${
+									dialog.type.includes("delete")
+										? "button--danger"
+										: "button--primary"
+								}`}
+								disabled={
+									isSubmittingDialog ||
+									("initialValue" in dialog && dialogValue.trim().length === 0)
+								}
+								onClick={() => void submitDialog()}
+							>
+								{isSubmittingDialog ? "Working…" : dialog.submitLabel}
+							</button>
+						</div>
+					</div>
+				</div>
+			) : null}
 		</div>
 	);
 }
@@ -465,7 +680,9 @@ function renderFolderTree(
 		.map((folder) => (
 			<div key={folder.id} className="folder-tree__branch">
 				<button
-					className={`folder-tree__item ${selectedFolderId === folder.id ? "folder-tree__item--active" : ""}`}
+					className={`folder-tree__item ${
+						selectedFolderId === folder.id ? "folder-tree__item--active" : ""
+					}`}
 					onClick={() => void onSelect(folder.id)}
 				>
 					<span className="folder-tree__dot" />
@@ -489,9 +706,14 @@ function summarizePrompt(prompt: PromptRecord): PromptSummary {
 	};
 }
 
-function replacePromptSummary(current: PromptSummary[], next: PromptSummary): PromptSummary[] {
+function replacePromptSummary(
+	current: PromptSummary[],
+	next: PromptSummary,
+): PromptSummary[] {
 	const remaining = current.filter((entry) => entry.id !== next.id);
-	return [next, ...remaining].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+	return [next, ...remaining].sort((left, right) =>
+		right.updatedAt.localeCompare(left.updatedAt),
+	);
 }
 
 function mergePromptSummaries(
@@ -500,7 +722,9 @@ function mergePromptSummaries(
 	folderId: string,
 ): PromptSummary[] {
 	const preserved = current.filter((prompt) => prompt.folderId !== folderId);
-	return [...preserved, ...nextForFolder].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+	return [...preserved, ...nextForFolder].sort((left, right) =>
+		right.updatedAt.localeCompare(left.updatedAt),
+	);
 }
 
 function folderNameFor(folderId: string, folders: FolderRecord[]): string {
