@@ -949,7 +949,7 @@ function renderFolderTree(
 					</button>
 					<div className="folder-tree__actions">
 						<button
-							className="button button--icon folder-tree__action"
+							className="folder-tree__action"
 							aria-label={`Rename ${folder.name}`}
 							title="Rename folder"
 							onClick={() => onRename(folder)}
@@ -957,7 +957,7 @@ function renderFolderTree(
 							<PencilSimple className="button__icon-svg" aria-hidden="true" weight="duotone" />
 						</button>
 						<button
-							className="button button--icon button--danger folder-tree__action"
+							className="folder-tree__action folder-tree__action--danger"
 							aria-label={`Delete ${folder.name}`}
 							title="Delete folder"
 							onClick={() => onDelete(folder)}

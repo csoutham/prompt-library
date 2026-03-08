@@ -379,9 +379,29 @@ kbd {
 }
 
 .folder-tree__action {
-	min-width: 34px;
-	min-height: 34px;
-	background: rgba(255, 250, 244, 0.92);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+	transition: color 120ms ease, transform 120ms ease, opacity 120ms ease;
+}
+
+.folder-tree__action:hover {
+	color: var(--accent-strong);
+	transform: translateY(-1px);
+}
+
+.folder-tree__action--danger:hover {
+	color: var(--danger);
+}
+
+.folder-tree__action .button__icon-svg {
+	width: 16px;
+	height: 16px;
 }
 
 .prompt-list-panel {
