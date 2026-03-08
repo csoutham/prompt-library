@@ -47,6 +47,12 @@ type DialogState =
 			submitLabel: string;
 			promptId: string;
 	  }
+	| {
+			type: "import-library";
+			title: string;
+			description: string;
+			submitLabel: string;
+	  }
 	| null;
 
 function App() {
@@ -266,6 +272,16 @@ function App() {
 					setStatusMessage("Deleted prompt");
 					break;
 				}
+				case "import-library": {
+					const result = await promptStoreApi.importLibrary();
+					if (!result.imported) {
+						closeDialog();
+						return;
+					}
+					await loadInitialState();
+					setStatusMessage("Imported library snapshot");
+					break;
+				}
 			}
 
 			closeDialog();
@@ -313,19 +329,6 @@ function App() {
 				return;
 			}
 			setStatusMessage(`Exported library to ${result.filePath}`);
-		} catch (error) {
-			setErrorMessage(toMessage(error));
-		}
-	}
-
-	async function importLibrary() {
-		try {
-			const result = await promptStoreApi.importLibrary();
-			if (!result.imported) {
-				return;
-			}
-			await loadInitialState();
-			setStatusMessage("Imported library snapshot");
 		} catch (error) {
 			setErrorMessage(toMessage(error));
 		}
@@ -469,7 +472,18 @@ function App() {
 						<button className="button" onClick={() => void exportLibrary()}>
 							Export
 						</button>
-						<button className="button" onClick={() => void importLibrary()}>
+						<button
+							className="button"
+							onClick={() =>
+								openDialog({
+									type: "import-library",
+									title: "Import library",
+									description:
+										"Choose a previously exported JSON snapshot. This replaces the current library on disk.",
+									submitLabel: "Choose Import File",
+								})
+							}
+						>
 							Import
 						</button>
 					</div>
@@ -546,6 +560,13 @@ function App() {
 							<div className="empty-state">
 								<p>No prompts yet.</p>
 								<span>Create one in this folder to start your library.</span>
+								<button
+									className="button button--primary"
+									disabled={!selectedFolderId}
+									onClick={() => void createPrompt()}
+								>
+									Create First Prompt
+								</button>
 							</div>
 						) : (
 							visiblePrompts.map((prompt) => (
@@ -634,6 +655,13 @@ function App() {
 						<div className="empty-state empty-state--editor">
 							<p>Choose a prompt or create a new one.</p>
 							<span>Markdown autosaves after you pause typing.</span>
+							<button
+								className="button button--primary"
+								disabled={!selectedFolderId}
+								onClick={() => void createPrompt()}
+							>
+								New Prompt
+							</button>
 						</div>
 					)}
 
