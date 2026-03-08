@@ -148,6 +148,31 @@ kbd {
 
 .prompt-list-toolbar {
 	margin-top: -4px;
+	align-items: end;
+}
+
+.sort-field {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 170px;
+}
+
+.sort-field span {
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.sort-field select {
+	border: 1px solid rgba(98, 72, 46, 0.12);
+	border-radius: 18px;
+	padding: 12px 14px;
+	background: var(--surface);
+	color: var(--text);
+	outline: none;
 }
 
 .button {
@@ -210,6 +235,7 @@ kbd {
 .folder-tree__item {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 10px;
 	border: 0;
 	border-radius: 14px;
@@ -218,6 +244,13 @@ kbd {
 	color: var(--text);
 	text-align: left;
 	cursor: pointer;
+}
+
+.folder-tree__item-label {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
 }
 
 .folder-tree__item--active {
@@ -231,6 +264,16 @@ kbd {
 	border-radius: 999px;
 	background: currentColor;
 	opacity: 0.55;
+}
+
+.folder-tree__count {
+	min-width: 26px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: rgba(98, 72, 46, 0.08);
+	color: var(--muted);
+	font-size: 0.76rem;
+	text-align: center;
 }
 
 .prompt-list-panel {

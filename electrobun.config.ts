@@ -4,7 +4,7 @@ export default {
 	app: {
 		name: "Prompt Store",
 		identifier: "com.promptstore.app",
-		version: "0.3.0",
+		version: "0.3.1",
 	},
 	build: {
 		// Vite builds to dist/, we copy from there

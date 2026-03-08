@@ -56,6 +56,7 @@ type DialogState =
 	| null;
 
 function App() {
+	const [sortMode, setSortMode] = useState<"updated" | "title" | "created">("updated");
 	const [folders, setFolders] = useState<FolderRecord[]>([]);
 	const [promptSummaries, setPromptSummaries] = useState<PromptSummary[]>([]);
 	const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
@@ -167,16 +168,23 @@ function App() {
 	}, [dialog]);
 
 	const visiblePrompts = useMemo(() => {
-		if (searchQuery.trim()) {
-			return promptSummaries;
-		}
+		const base =
+			searchQuery.trim()
+				? promptSummaries
+				: selectedFolderId
+					? promptSummaries.filter((prompt) => prompt.folderId === selectedFolderId)
+					: [];
 
-		if (!selectedFolderId) {
-			return [];
-		}
+		return [...base].sort((left, right) => sortPrompts(left, right, sortMode));
+	}, [promptSummaries, searchQuery, selectedFolderId, sortMode]);
 
-		return promptSummaries.filter((prompt) => prompt.folderId === selectedFolderId);
-	}, [promptSummaries, searchQuery, selectedFolderId]);
+	const folderPromptCounts = useMemo(() => {
+		const counts = new Map<string, number>();
+		for (const prompt of promptSummaries) {
+			counts.set(prompt.folderId, (counts.get(prompt.folderId) ?? 0) + 1);
+		}
+		return counts;
+	}, [promptSummaries]);
 
 	const selectedFolder = folders.find((folder) => folder.id === selectedFolderId) ?? null;
 
@@ -577,7 +585,13 @@ function App() {
 					</div>
 
 					<div className="folder-tree">
-						{renderFolderTree(folders, null, selectedFolderId, selectFolder)}
+						{renderFolderTree(
+							folders,
+							null,
+							selectedFolderId,
+							selectFolder,
+							folderPromptCounts,
+						)}
 					</div>
 				</aside>
 
@@ -599,6 +613,19 @@ function App() {
 					</div>
 
 					<div className="prompt-list-toolbar">
+						<label className="sort-field">
+							<span>Sort</span>
+							<select
+								value={sortMode}
+								onChange={(event) =>
+									setSortMode(event.target.value as "updated" | "title" | "created")
+								}
+							>
+								<option value="updated">Recently updated</option>
+								<option value="created">Recently created</option>
+								<option value="title">Title</option>
+							</select>
+						</label>
 						<button
 							className="button"
 							disabled={!selectedPrompt}
@@ -822,6 +849,7 @@ function renderFolderTree(
 	parentId: string | null,
 	selectedFolderId: string | null,
 	onSelect: (folderId: string) => void | Promise<void>,
+	folderPromptCounts: Map<string, number>,
 ) {
 	return folders
 		.filter((folder) => folder.parentId === parentId)
@@ -833,11 +861,22 @@ function renderFolderTree(
 					}`}
 					onClick={() => void onSelect(folder.id)}
 				>
-					<span className="folder-tree__dot" />
-					{folder.name}
+					<span className="folder-tree__item-label">
+						<span className="folder-tree__dot" />
+						<span>{folder.name}</span>
+					</span>
+					<span className="folder-tree__count">
+						{folderPromptCounts.get(folder.id) ?? 0}
+					</span>
 				</button>
 				<div className="folder-tree__children">
-					{renderFolderTree(folders, folder.id, selectedFolderId, onSelect)}
+					{renderFolderTree(
+						folders,
+						folder.id,
+						selectedFolderId,
+						onSelect,
+						folderPromptCounts,
+					)}
 				</div>
 			</div>
 		));
@@ -898,6 +937,22 @@ function formatDateTime(value: string): string {
 
 function sortFolders(left: FolderRecord, right: FolderRecord): number {
 	return left.name.localeCompare(right.name);
+}
+
+function sortPrompts(
+	left: PromptSummary,
+	right: PromptSummary,
+	mode: "updated" | "title" | "created",
+): number {
+	switch (mode) {
+		case "title":
+			return left.title.localeCompare(right.title);
+		case "created":
+			return right.createdAt.localeCompare(left.createdAt);
+		case "updated":
+		default:
+			return right.updatedAt.localeCompare(left.updatedAt);
+	}
 }
 
 function toMessage(error: unknown): string {
