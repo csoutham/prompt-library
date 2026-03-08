@@ -5,7 +5,6 @@ import {
 	Check,
 	Copy,
 	DownloadSimple,
-	FolderPlus,
 	FolderSimpleDashed,
 	PencilSimple,
 	Keyboard,
@@ -524,6 +523,30 @@ function App() {
 				<div className="app-topbar__meta">
 					<button
 						className="button button--icon"
+						aria-label="Export library"
+						title="Export library"
+						onClick={() => void exportLibrary()}
+					>
+						<DownloadSimple className="button__icon-svg button__icon-svg--large" aria-hidden="true" weight="duotone" />
+					</button>
+					<button
+						className="button button--icon"
+						aria-label="Import library"
+						title="Import library"
+						onClick={() =>
+							openDialog({
+								type: "import-library",
+								title: "Import library",
+								description:
+									"Choose a previously exported JSON snapshot. This replaces the current library on disk.",
+								submitLabel: "Choose Import File",
+							})
+						}
+					>
+						<UploadSimple className="button__icon-svg button__icon-svg--large" aria-hidden="true" weight="duotone" />
+					</button>
+					<button
+						className="button button--icon"
 						aria-label="Show shortcuts"
 						title="Show shortcuts"
 						onClick={() =>
@@ -537,18 +560,6 @@ function App() {
 					>
 						<Keyboard className="button__icon-svg" aria-hidden="true" weight="duotone" />
 					</button>
-					<div className="topbar-pill">
-						<span>Folders</span>
-						<strong>{folders.length}</strong>
-					</div>
-					<div className="topbar-pill">
-						<span>Prompts</span>
-						<strong>{promptSummaries.length}</strong>
-					</div>
-					<div className="topbar-pill topbar-pill--status">
-						<span>Status</span>
-						<strong>{isSaving ? "Saving" : "Ready"}</strong>
-					</div>
 				</div>
 			</header>
 			<div className="app-frame">
@@ -569,86 +580,6 @@ function App() {
 						>
 							New Folder
 						</button>
-						<button
-							className="button button--icon"
-							disabled={!selectedFolder}
-							aria-label="Create subfolder"
-							title="Create subfolder"
-							onClick={() =>
-								selectedFolder &&
-								openDialog({
-									type: "create-folder",
-									title: "New subfolder",
-									description: `Create a child folder inside "${selectedFolder.name}".`,
-									submitLabel: "Create Subfolder",
-									initialValue: "New Folder",
-									parentId: selectedFolder.id,
-								})
-							}
-						>
-							<FolderPlus className="button__icon-svg" aria-hidden="true" weight="duotone" />
-						</button>
-						<button
-							className="button button--icon"
-							disabled={!selectedFolder}
-							aria-label="Rename folder"
-							title="Rename folder"
-							onClick={() =>
-								selectedFolder &&
-								openDialog({
-									type: "rename-folder",
-									title: "Rename folder",
-									description: "Update the folder name.",
-									submitLabel: "Rename Folder",
-									initialValue: selectedFolder.name,
-									folderId: selectedFolder.id,
-								})
-							}
-						>
-							<PencilSimple className="button__icon-svg" aria-hidden="true" weight="duotone" />
-						</button>
-						<button
-							className="button button--icon button--danger"
-							disabled={!selectedFolder}
-							aria-label="Delete folder"
-							title="Delete folder"
-							onClick={() =>
-								selectedFolder &&
-								openDialog({
-									type: "delete-folder",
-									title: "Delete folder",
-									description: `Delete "${selectedFolder.name}". Non-empty folders are blocked.`,
-									submitLabel: "Delete Folder",
-									folderId: selectedFolder.id,
-								})
-							}
-						>
-							<Trash className="button__icon-svg" aria-hidden="true" weight="duotone" />
-						</button>
-						<button
-							className="button button--icon"
-							onClick={() => void exportLibrary()}
-							aria-label="Export library"
-							title="Export library"
-						>
-							<DownloadSimple className="button__icon-svg" aria-hidden="true" weight="duotone" />
-						</button>
-						<button
-							className="button button--icon"
-							aria-label="Import library"
-							title="Import library"
-							onClick={() =>
-								openDialog({
-									type: "import-library",
-									title: "Import library",
-									description:
-										"Choose a previously exported JSON snapshot. This replaces the current library on disk.",
-									submitLabel: "Choose Import File",
-								})
-							}
-						>
-							<UploadSimple className="button__icon-svg" aria-hidden="true" weight="duotone" />
-						</button>
 					</div>
 
 					<div className="folder-tree">
@@ -658,6 +589,23 @@ function App() {
 							selectedFolderId,
 							selectFolder,
 							folderPromptCounts,
+							(folder) =>
+								openDialog({
+									type: "rename-folder",
+									title: "Rename folder",
+									description: "Update the folder name.",
+									submitLabel: "Rename Folder",
+									initialValue: folder.name,
+									folderId: folder.id,
+								}),
+							(folder) =>
+								openDialog({
+									type: "delete-folder",
+									title: "Delete folder",
+									description: `Delete "${folder.name}". Non-empty folders are blocked.`,
+									submitLabel: "Delete Folder",
+									folderId: folder.id,
+								}),
 						)}
 					</div>
 				</aside>
@@ -973,25 +921,51 @@ function renderFolderTree(
 	selectedFolderId: string | null,
 	onSelect: (folderId: string) => void | Promise<void>,
 	folderPromptCounts: Map<string, number>,
+	onRename: (folder: FolderRecord) => void,
+	onDelete: (folder: FolderRecord) => void,
 ) {
 	return folders
 		.filter((folder) => folder.parentId === parentId)
 		.map((folder) => (
 			<div key={folder.id} className="folder-tree__branch">
-				<button
-					className={`folder-tree__item ${
-						selectedFolderId === folder.id ? "folder-tree__item--active" : ""
+				<div
+					className={`folder-tree__row ${
+						selectedFolderId === folder.id ? "folder-tree__row--active" : ""
 					}`}
-					onClick={() => void onSelect(folder.id)}
 				>
-					<span className="folder-tree__item-label">
-						<span className="folder-tree__dot" />
-						<span>{folder.name}</span>
-					</span>
-					<span className="folder-tree__count">
-						{folderPromptCounts.get(folder.id) ?? 0}
-					</span>
-				</button>
+					<button
+						className={`folder-tree__item ${
+							selectedFolderId === folder.id ? "folder-tree__item--active" : ""
+						}`}
+						onClick={() => void onSelect(folder.id)}
+					>
+						<span className="folder-tree__item-label">
+							<span className="folder-tree__dot" />
+							<span>{folder.name}</span>
+						</span>
+						<span className="folder-tree__count">
+							{folderPromptCounts.get(folder.id) ?? 0}
+						</span>
+					</button>
+					<div className="folder-tree__actions">
+						<button
+							className="button button--icon folder-tree__action"
+							aria-label={`Rename ${folder.name}`}
+							title="Rename folder"
+							onClick={() => onRename(folder)}
+						>
+							<PencilSimple className="button__icon-svg" aria-hidden="true" weight="duotone" />
+						</button>
+						<button
+							className="button button--icon button--danger folder-tree__action"
+							aria-label={`Delete ${folder.name}`}
+							title="Delete folder"
+							onClick={() => onDelete(folder)}
+						>
+							<Trash className="button__icon-svg" aria-hidden="true" weight="duotone" />
+						</button>
+					</div>
+				</div>
 				<div className="folder-tree__children">
 					{renderFolderTree(
 						folders,
@@ -999,6 +973,8 @@ function renderFolderTree(
 						selectedFolderId,
 						onSelect,
 						folderPromptCounts,
+						onRename,
+						onDelete,
 					)}
 				</div>
 			</div>

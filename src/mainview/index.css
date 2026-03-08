@@ -79,36 +79,8 @@ textarea {
 
 .app-topbar__meta {
 	display: flex;
-	flex-wrap: wrap;
 	align-items: center;
 	gap: 10px;
-}
-
-.topbar-pill {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	min-width: 92px;
-	padding: 9px 12px;
-	border: 1px solid rgba(83, 60, 41, 0.12);
-	border-radius: 14px;
-	background: rgba(255, 250, 244, 0.72);
-}
-
-.topbar-pill span {
-	font-size: 0.64rem;
-	font-weight: 700;
-	letter-spacing: 0.18em;
-	text-transform: uppercase;
-	color: var(--muted);
-}
-
-.topbar-pill strong {
-	font-size: 0.96rem;
-}
-
-.topbar-pill--status {
-	background: linear-gradient(135deg, rgba(155, 77, 35, 0.12), rgba(255, 250, 244, 0.8));
 }
 
 .app-frame {
@@ -141,7 +113,7 @@ textarea {
 .panel-header h2 {
 	margin: 0;
 	font-family: var(--headline);
-	font-size: 2rem;
+	font-size: 1.5rem;
 	line-height: 0.96;
 	letter-spacing: -0.05em;
 }
@@ -186,6 +158,11 @@ kbd {
 
 .sidebar__controls {
 	align-items: center;
+}
+
+.sidebar__controls .button--primary {
+	width: 100%;
+	justify-content: center;
 }
 
 .prompt-list-toolbar {
@@ -270,6 +247,11 @@ kbd {
 	height: 18px;
 }
 
+.button__icon-svg--large {
+	width: 22px;
+	height: 22px;
+}
+
 .button__icon-inline {
 	margin-right: 8px;
 }
@@ -320,6 +302,12 @@ kbd {
 	gap: 8px;
 }
 
+.folder-tree__row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
 .folder-tree__children {
 	display: flex;
 	flex-direction: column;
@@ -332,6 +320,7 @@ kbd {
 	align-items: center;
 	justify-content: space-between;
 	gap: 10px;
+	flex: 1;
 	border: 0;
 	border-radius: 14px;
 	padding: 10px 12px;
@@ -339,6 +328,7 @@ kbd {
 	color: var(--text);
 	text-align: left;
 	cursor: pointer;
+	font-size: 0.9rem;
 }
 
 .folder-tree__item-label {
@@ -369,6 +359,29 @@ kbd {
 	color: var(--muted);
 	font-size: 0.76rem;
 	text-align: center;
+}
+
+.folder-tree__actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	opacity: 0;
+	pointer-events: none;
+	transform: translateX(4px);
+	transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.folder-tree__row:hover .folder-tree__actions,
+.folder-tree__row--active .folder-tree__actions {
+	opacity: 1;
+	pointer-events: auto;
+	transform: translateX(0);
+}
+
+.folder-tree__action {
+	min-width: 34px;
+	min-height: 34px;
+	background: rgba(255, 250, 244, 0.92);
 }
 
 .prompt-list-panel {
