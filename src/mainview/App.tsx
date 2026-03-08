@@ -809,8 +809,23 @@ function App() {
 
 					{selectedPrompt ? (
 						<div className="editor-pane">
-							<div className="editor-ribbon">
-								<span className="editor-ribbon__label">Workbench</span>
+							<label className="editor-field">
+								<span>Title</span>
+								<input
+									value={draftTitle}
+									onChange={(event) => setDraftTitle(event.target.value)}
+								/>
+							</label>
+							<label className="editor-field editor-field--body">
+								<span>Contents</span>
+								<textarea
+									value={draftBody}
+									onChange={(event) => setDraftBody(event.target.value)}
+									placeholder="# Prompt title&#10;&#10;Write the reusable instructions here."
+								/>
+							</label>
+							<div className="editor-ribbon editor-ribbon--footer">
+								<span className="editor-ribbon__label">Stats</span>
 								<span className="editor-ribbon__value">
 									{draftBody.trim() ? `${draftBody.trim().split(/\s+/).length} words` : "Empty draft"}
 								</span>
@@ -829,21 +844,6 @@ function App() {
 									<strong>{formatDateTime(selectedPrompt.updatedAt)}</strong>
 								</div>
 							</div>
-							<label className="editor-field">
-								<span>Title</span>
-								<input
-									value={draftTitle}
-									onChange={(event) => setDraftTitle(event.target.value)}
-								/>
-							</label>
-							<label className="editor-field editor-field--body">
-								<span>Markdown</span>
-								<textarea
-									value={draftBody}
-									onChange={(event) => setDraftBody(event.target.value)}
-									placeholder="# Prompt title&#10;&#10;Write the reusable instructions here."
-								/>
-							</label>
 						</div>
 					) : (
 						<div className="empty-state empty-state--editor">

@@ -189,15 +189,16 @@ kbd {
 }
 
 .prompt-list-toolbar {
-	align-items: end;
-	justify-content: space-between;
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: flex-start;
 }
 
 .sort-field {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	min-width: 168px;
+	width: 100%;
 }
 
 .sort-field span {
@@ -212,6 +213,7 @@ kbd {
 	position: relative;
 	display: flex;
 	align-items: center;
+	width: 100%;
 }
 
 .sort-field select,
@@ -391,6 +393,10 @@ kbd {
 	gap: 8px;
 }
 
+.search-field {
+	width: 100%;
+}
+
 .search-field span,
 .editor-field span {
 	font-size: 0.72rem;
@@ -532,6 +538,10 @@ kbd {
 	font-weight: 700;
 }
 
+.editor-ribbon--footer {
+	margin-top: auto;
+}
+
 .editor-meta {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -563,6 +573,13 @@ kbd {
 
 .editor-field--body {
 	flex: 1;
+	min-height: 0;
+}
+
+.editor-field--body textarea {
+	flex: 1;
+	min-height: 0;
+	height: 100%;
 }
 
 .empty-state {
