@@ -40,7 +40,10 @@ async function getMainViewUrl(): Promise<string> {
 const url = await getMainViewUrl();
 const store = new PromptStore(join(Utils.paths.userData, "library"));
 const tray = new Tray({
-	title: "YPL",
+	image: "views://mainview/tray-icon.svg",
+	template: true,
+	width: 18,
+	height: 18,
 });
 let mainWindow: BrowserWindow<any>;
 

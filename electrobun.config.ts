@@ -7,13 +7,14 @@ export default {
 	app: {
 		name: "Your Prompt Library",
 		identifier: appIdentifier,
-		version: "0.8.2",
+		version: "0.8.3",
 	},
 	build: {
 		// Vite builds to dist/, we copy from there
 		copy: {
 			"dist/index.html": "views/mainview/index.html",
 			"dist/assets": "views/mainview/assets",
+			"assets/tray-icon.svg": "views/mainview/tray-icon.svg",
 		},
 		// Ignore Vite output in watch mode — HMR handles view rebuilds separately
 		watchIgnore: ["dist/**"],
