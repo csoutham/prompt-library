@@ -22,9 +22,15 @@
 	box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+	height: 100%;
+}
+
 body {
 	margin: 0;
-	min-height: 100vh;
+	overflow: hidden;
 	background:
 		radial-gradient(circle at top left, rgba(192, 126, 78, 0.24), transparent 24%),
 		radial-gradient(circle at 78% 16%, rgba(107, 79, 60, 0.1), transparent 16%),
@@ -43,13 +49,9 @@ select {
 	-webkit-app-region: no-drag;
 }
 
-#root {
-	min-height: 100vh;
-}
-
 .loading-shell,
 .app-shell {
-	min-height: 100vh;
+	height: 100%;
 }
 
 .loading-shell {
@@ -64,6 +66,7 @@ select {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+	overflow: hidden;
 }
 
 .app-live-region {
@@ -111,7 +114,8 @@ select {
 .app-frame {
 	display: grid;
 	grid-template-columns: 280px 340px minmax(0, 1fr);
-	min-height: calc(100vh - 44px);
+	flex: 1;
+	min-height: 0;
 	border: 1px solid rgba(94, 66, 45, 0.1);
 	border-radius: 28px;
 	overflow: hidden;
