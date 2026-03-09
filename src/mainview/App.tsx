@@ -520,6 +520,7 @@ function App() {
 				<div className="app-topbar__brand">
 					<h1>Your prompt library</h1>
 				</div>
+				<div className="app-topbar__drag" aria-hidden="true" />
 				<div className="app-topbar__meta">
 					<button
 						className="button button--icon"
@@ -527,7 +528,7 @@ function App() {
 						title="Export library"
 						onClick={() => void exportLibrary()}
 					>
-						<DownloadSimple className="button__icon-svg button__icon-svg--large" aria-hidden="true" weight="duotone" />
+						<DownloadSimple className="button__icon-svg button__icon-svg--large" aria-hidden="true" />
 					</button>
 					<button
 						className="button button--icon"
@@ -543,7 +544,7 @@ function App() {
 							})
 						}
 					>
-						<UploadSimple className="button__icon-svg button__icon-svg--large" aria-hidden="true" weight="duotone" />
+						<UploadSimple className="button__icon-svg button__icon-svg--large" aria-hidden="true" />
 					</button>
 					<button
 						className="button button--icon"
@@ -558,7 +559,7 @@ function App() {
 							})
 						}
 					>
-						<Keyboard className="button__icon-svg" aria-hidden="true" weight="duotone" />
+						<Keyboard className="button__icon-svg" aria-hidden="true" />
 					</button>
 				</div>
 			</header>
@@ -717,7 +718,7 @@ function App() {
 									})
 								}
 							>
-								<FolderSimpleDashed className="button__icon-svg" aria-hidden="true" weight="duotone" />
+								<FolderSimpleDashed className="button__icon-svg" aria-hidden="true" />
 							</button>
 							<button
 								className={`button button--icon ${
@@ -731,7 +732,7 @@ function App() {
 								{copiedPromptId === selectedPrompt?.id ? (
 									<Check className="button__icon-svg" aria-hidden="true" weight="bold" />
 								) : (
-									<Copy className="button__icon-svg" aria-hidden="true" weight="duotone" />
+									<Copy className="button__icon-svg" aria-hidden="true" />
 								)}
 							</button>
 							<button
@@ -750,7 +751,7 @@ function App() {
 									})
 								}
 							>
-								<Trash className="button__icon-svg" aria-hidden="true" weight="duotone" />
+								<Trash className="button__icon-svg" aria-hidden="true" />
 							</button>
 						</div>
 					</div>
@@ -954,7 +955,7 @@ function renderFolderTree(
 							title="Rename folder"
 							onClick={() => onRename(folder)}
 						>
-							<PencilSimple className="button__icon-svg" aria-hidden="true" weight="duotone" />
+							<PencilSimple className="button__icon-svg" aria-hidden="true" />
 						</button>
 						<button
 							className="folder-tree__action folder-tree__action--danger"
@@ -962,7 +963,7 @@ function renderFolderTree(
 							title="Delete folder"
 							onClick={() => onDelete(folder)}
 						>
-							<Trash className="button__icon-svg" aria-hidden="true" weight="duotone" />
+							<Trash className="button__icon-svg" aria-hidden="true" />
 						</button>
 					</div>
 				</div>

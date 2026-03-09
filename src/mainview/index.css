@@ -83,6 +83,15 @@ select {
 	letter-spacing: -0.06em;
 }
 
+.app-topbar__drag {
+	flex: 1;
+	min-width: 120px;
+	min-height: 34px;
+	border-radius: 999px;
+	background: linear-gradient(180deg, rgba(255, 250, 244, 0.28), rgba(255, 250, 244, 0.08));
+	border: 1px solid rgba(83, 60, 41, 0.08);
+}
+
 .app-topbar__meta {
 	display: flex;
 	align-items: center;
@@ -472,15 +481,8 @@ kbd {
 	border: 1px solid rgba(95, 70, 47, 0.1);
 	border-radius: 18px;
 	background: var(--surface-strong);
-	box-shadow: 0 16px 38px rgba(81, 54, 32, 0.06);
 	text-align: left;
 	cursor: pointer;
-	transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.prompt-card:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 20px 40px rgba(81, 54, 32, 0.08);
 }
 
 .prompt-card--active {
@@ -712,6 +714,10 @@ kbd {
 		flex-direction: column;
 		align-items: stretch;
 		padding-left: 4px;
+	}
+
+	.app-topbar__drag {
+		display: none;
 	}
 
 	.app-frame {

@@ -1,13 +1,13 @@
 import type { ElectrobunConfig } from "electrobun";
 
 const isTestFlightRelease = process.env.ELECTROBUN_TARGET === "testflight";
-const appIdentifier = process.env.APP_BUNDLE_ID ?? "com.promptstore.app";
+const appIdentifier = process.env.APP_BUNDLE_ID ?? "com.csoutham.promptlibrary";
 
 export default {
 	app: {
 		name: "Your Prompt Library",
 		identifier: appIdentifier,
-		version: "0.7.0",
+		version: "0.7.1",
 	},
 	build: {
 		// Vite builds to dist/, we copy from there

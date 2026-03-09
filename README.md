@@ -1,16 +1,17 @@
 # Your Prompt Library
 
-`v0.7.0`
+`v0.7.1`
 
 Your Prompt Library is a local-first macOS desktop app for collecting AI prompts in folders. It is built with Electrobun, Bun, React, and a file-backed Markdown store so prompts stay readable and portable on disk.
 
-## What ships in v0.7.0
+## What ships in v0.7.1
 
 - Folder tree with nested folders
 - Prompt list for the current folder
 - Full-width sort and search controls in the prompt list
 - Header import/export actions with larger icon treatment
 - Hidden macOS title bar with a draggable in-app header
+- Dedicated draggable header strip for easier window movement
 - Markdown editor with direct title editing
 - Full-height `Contents` editor with `Stats` docked at the bottom
 - Move prompts between folders and subfolders from the editor toolbar
