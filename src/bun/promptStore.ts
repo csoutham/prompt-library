@@ -65,11 +65,17 @@ export class PromptStore {
 	async createFolder(name: string, parentId: string | null): Promise<FolderRecord> {
 		await this.ensureInitialized();
 		const trimmedName = normalizeName(name, "New Folder");
+		const folders = await this.readFolders();
 		if (parentId) {
-			await this.ensureFolderExists(parentId);
+			const parentFolder = folders.find((folder) => folder.id === parentId);
+			if (!parentFolder) {
+				throw new PromptStoreError("Folder not found.");
+			}
+			if (parentFolder.parentId !== null) {
+				throw new PromptStoreError("Folders can only be nested one level deep.");
+			}
 		}
 
-		const folders = await this.readFolders();
 		const now = new Date().toISOString();
 		const folder: FolderRecord = {
 			id: crypto.randomUUID(),

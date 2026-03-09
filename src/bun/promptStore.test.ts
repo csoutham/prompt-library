@@ -92,6 +92,16 @@ describe("PromptStore", () => {
 		expect((await store.listPrompts(destination.id)).some((entry) => entry.id === prompt.id)).toBe(true);
 	});
 
+	test("blocks folders deeper than one child level", async () => {
+		const store = new PromptStore(rootDir);
+		const parent = await store.createFolder("Parent", null);
+		const child = await store.createFolder("Child", parent.id);
+
+		await expect(store.createFolder("Grandchild", child.id)).rejects.toThrow(
+			"Folders can only be nested one level deep.",
+		);
+	});
+
 	test("deletes an empty folder", async () => {
 		const store = new PromptStore(rootDir);
 		const folder = await store.createFolder("Archive", null);

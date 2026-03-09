@@ -516,6 +516,9 @@ function App() {
 
 	return (
 		<div className="app-shell">
+			<div className="app-live-region" aria-live="polite">
+				{errorMessage ?? (isSaving ? "Autosaving…" : statusMessage)}
+			</div>
 			<header className="app-topbar">
 				<div className="app-topbar__brand">
 					<h1>Your prompt library</h1>
@@ -589,6 +592,15 @@ function App() {
 							selectedFolderId,
 							selectFolder,
 							folderPromptCounts,
+							(folder) =>
+								openDialog({
+									type: "create-folder",
+									title: "New subfolder",
+									description: `Create a child folder inside "${folder.name}".`,
+									submitLabel: "Create Subfolder",
+									initialValue: "New Folder",
+									parentId: folder.id,
+								}),
 							(folder) =>
 								openDialog({
 									type: "rename-folder",
@@ -806,17 +818,6 @@ function App() {
 							</button>
 						</div>
 					)}
-
-					<footer className="status-bar">
-						<span>{errorMessage ?? statusMessage}</span>
-						<span>
-							{isSaving
-								? "Autosaving…"
-								: selectedPrompt
-									? `Updated ${formatTimestamp(selectedPrompt.updatedAt)}`
-									: "Idle"}
-						</span>
-					</footer>
 				</section>
 			</div>
 
@@ -921,6 +922,7 @@ function renderFolderTree(
 	selectedFolderId: string | null,
 	onSelect: (folderId: string) => void | Promise<void>,
 	folderPromptCounts: Map<string, number>,
+	onCreateChild: (folder: FolderRecord) => void,
 	onRename: (folder: FolderRecord) => void,
 	onDelete: (folder: FolderRecord) => void,
 ) {
@@ -948,6 +950,16 @@ function renderFolderTree(
 						</span>
 					</button>
 					<div className="folder-tree__actions">
+						{folder.parentId === null ? (
+							<button
+								className="folder-tree__action"
+								aria-label={`Create subfolder in ${folder.name}`}
+								title="Create subfolder"
+								onClick={() => onCreateChild(folder)}
+							>
+								<FolderSimpleDashed className="button__icon-svg" aria-hidden="true" />
+							</button>
+						) : null}
 						<button
 							className="folder-tree__action"
 							aria-label={`Rename ${folder.name}`}
@@ -973,6 +985,7 @@ function renderFolderTree(
 						selectedFolderId,
 						onSelect,
 						folderPromptCounts,
+						onCreateChild,
 						onRename,
 						onDelete,
 					)}
