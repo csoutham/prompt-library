@@ -10,6 +10,7 @@ This project is prepared for a macOS TestFlight submission path built from Elect
 - Electron Builder config at [electron-builder.config.cjs](/Users/Chris/Work/Projects/Apps/PromptStore/macos/electron-builder.config.cjs)
 - MAS entitlements at [entitlements.mas.plist](/Users/Chris/Work/Projects/Apps/PromptStore/macos/config/entitlements.mas.plist) and [entitlements.mas.inherit.plist](/Users/Chris/Work/Projects/Apps/PromptStore/macos/config/entitlements.mas.inherit.plist)
 - App icon asset at [AppIcon.icns](/Users/Chris/Work/Projects/Apps/PromptStore/macos/assets/AppIcon.icns)
+- Tray icon asset at [tray-icon.png](/Users/Chris/Work/Projects/Apps/PromptStore/macos/assets/tray-icon.png)
 - TestFlight-oriented signed build script: `bun run build:testflight`
 - Signed installer packaging script: `bun run package:testflight`
 

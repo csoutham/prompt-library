@@ -54,9 +54,9 @@ type PromptApi = {
 
 function trayIconPath() {
 	if (app.isPackaged) {
-		return join(process.resourcesPath, "assets", "tray-icon.svg");
+		return join(process.resourcesPath, "assets", "tray-icon.png");
 	}
-	return join(app.getAppPath(), "assets", "tray-icon.svg");
+	return join(app.getAppPath(), "assets", "tray-icon.png");
 }
 
 function buildApplicationMenu() {
@@ -307,6 +307,7 @@ const promptApi: PromptApi = {
 };
 
 app.whenReady().then(async () => {
+	app.setName("Your Prompt Library");
 	promptStore = new PromptStore(join(app.getPath("userData"), "library"));
 	for (const [channel, handler] of Object.entries(promptApi)) {
 		ipcMain.handle(`prompt-store:${channel}`, async (_event, ...args) => {

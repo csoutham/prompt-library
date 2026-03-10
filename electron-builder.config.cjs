@@ -5,7 +5,13 @@ module.exports = {
 	directories: {
 		output: "release",
 	},
-	files: ["build/electron/**/*", "dist/**/*", "assets/tray-icon.svg", "package.json"],
+	files: [
+		"build/electron/**/*",
+		"dist/**/*",
+		"assets/tray-icon.svg",
+		"assets/tray-icon.png",
+		"package.json",
+	],
 	asar: true,
 	mac: {
 		target: ["dir"],
