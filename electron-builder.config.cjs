@@ -10,10 +10,11 @@ module.exports = {
 	mac: {
 		target: ["dir"],
 		category: "public.app-category.productivity",
-		icon: "assets/icon.iconset",
+		icon: "assets/AppIcon.icns",
 		minimumSystemVersion: "12.0",
 	},
 	mas: {
+		icon: "assets/AppIcon.icns",
 		provisioningProfile: process.env.APP_PROVISION_PROFILE,
 		entitlements: "config/entitlements.mas.plist",
 		entitlementsInherit: "config/entitlements.mas.inherit.plist",
