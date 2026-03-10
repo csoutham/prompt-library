@@ -11,6 +11,7 @@ module.exports = {
 		target: ["dir"],
 		category: "public.app-category.productivity",
 		icon: "assets/icon.iconset",
+		minimumSystemVersion: "12.0",
 	},
 	mas: {
 		provisioningProfile: process.env.APP_PROVISION_PROFILE,
