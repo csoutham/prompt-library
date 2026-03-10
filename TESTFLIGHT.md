@@ -52,4 +52,5 @@ The resulting upload artifact is:
 - The app is configured as arm64-only and declares `minimumSystemVersion` of `12.0`, which App Store Connect requires for non-universal macOS uploads.
 - The renderer build uses relative asset paths so the packaged `file://` app can load its JS and CSS correctly outside the dev server.
 - The app `Info.plist` sets `ITSAppUsesNonExemptEncryption=false`; this helps App Store Connect treat the build as exempt, but the App Store Connect compliance UI may still need to be completed once.
+- The tray icon is loaded from the packaged app path so it works in both dev and production builds.
 - If you need App Store-specific metadata next, the remaining work is App Store Connect setup rather than code changes.

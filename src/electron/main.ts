@@ -53,9 +53,6 @@ type PromptApi = {
 };
 
 function trayIconPath() {
-	if (app.isPackaged) {
-		return join(process.resourcesPath, "assets", "tray-icon.png");
-	}
 	return join(app.getAppPath(), "assets", "tray-icon.png");
 }
 
