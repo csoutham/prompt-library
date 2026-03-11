@@ -750,7 +750,11 @@ function App() {
 								className="button button--icon"
 								disabled={!selectedPrompt}
 								aria-label="Move prompt"
-								title="Move prompt"
+								title={
+									selectedPrompt
+										? `Move "${selectedPrompt.title}"`
+										: "Move prompt"
+								}
 								onClick={() =>
 									selectedPrompt &&
 									openDialog({
@@ -771,7 +775,13 @@ function App() {
 								}`}
 								disabled={!selectedPrompt}
 								aria-label={copiedPromptId === selectedPrompt?.id ? "Copied" : "Copy prompt"}
-								title={copiedPromptId === selectedPrompt?.id ? "Copied" : "Copy prompt"}
+								title={
+									copiedPromptId === selectedPrompt?.id
+										? "Copied"
+										: selectedPrompt
+											? `Copy "${selectedPrompt.title}"`
+											: "Copy prompt"
+								}
 								onClick={() => void copyPrompt()}
 							>
 								{copiedPromptId === selectedPrompt?.id ? (
@@ -784,7 +794,11 @@ function App() {
 								className="button button--icon button--danger"
 								disabled={!selectedPrompt}
 								aria-label="Delete prompt"
-								title="Delete prompt"
+								title={
+									selectedPrompt
+										? `Delete "${selectedPrompt.title}"`
+										: "Delete prompt"
+								}
 								onClick={() =>
 									selectedPrompt &&
 									openDialog({
@@ -990,7 +1004,7 @@ function renderFolderTree(
 							<button
 								className="folder-tree__action"
 								aria-label={`Create subfolder in ${folder.name}`}
-								title="Create subfolder"
+								title={`Create subfolder in ${folder.name}`}
 								onClick={() => onCreateChild(folder)}
 							>
 								<FolderPlus className="button__icon-svg" aria-hidden="true" />
@@ -999,7 +1013,7 @@ function renderFolderTree(
 						<button
 							className="folder-tree__action"
 							aria-label={`Rename ${folder.name}`}
-							title="Rename folder"
+							title={`Rename ${folder.name}`}
 							onClick={() => onRename(folder)}
 						>
 							<PencilSimple className="button__icon-svg" aria-hidden="true" />
@@ -1007,7 +1021,7 @@ function renderFolderTree(
 						<button
 							className="folder-tree__action folder-tree__action--danger"
 							aria-label={`Delete ${folder.name}`}
-							title="Delete folder"
+							title={`Delete ${folder.name}`}
 							onClick={() => onDelete(folder)}
 						>
 							<Trash className="button__icon-svg" aria-hidden="true" />

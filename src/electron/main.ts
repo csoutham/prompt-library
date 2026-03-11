@@ -7,6 +7,7 @@ import {
 	dialog,
 	ipcMain,
 	nativeImage,
+	type ContextMenuParams,
 	type MenuItemConstructorOptions,
 } from "electron";
 import { readFile, writeFile } from "node:fs/promises";
@@ -85,6 +86,49 @@ function buildApplicationMenu() {
 	);
 }
 
+function buildContextMenu(
+	window: BrowserWindow,
+	params: ContextMenuParams,
+) {
+	const template: MenuItemConstructorOptions[] = [];
+
+	if (params.misspelledWord) {
+		for (const suggestion of params.dictionarySuggestions.slice(0, 5)) {
+			template.push({
+				label: suggestion,
+				click: () => window.webContents.replaceMisspelling(suggestion),
+			});
+		}
+
+		if (params.dictionarySuggestions.length > 0) {
+			template.push({ type: "separator" });
+		}
+	}
+
+	if (params.isEditable) {
+		template.push(
+			{ role: "undo" },
+			{ role: "redo" },
+			{ type: "separator" },
+			{ role: "cut" },
+			{ role: "copy" },
+			{ role: "paste" },
+			{ role: "pasteAndMatchStyle" },
+			{ role: "delete" },
+			{ type: "separator" },
+			{ role: "selectAll" },
+		);
+	} else if (params.selectionText.trim()) {
+		template.push({ role: "copy" }, { type: "separator" }, { role: "selectAll" });
+	}
+
+	if (template.length === 0) {
+		return;
+	}
+
+	Menu.buildFromTemplate(template).popup({ window });
+}
+
 async function mainViewUrl() {
 	if (isDev) {
 		return DEV_SERVER_URL;
@@ -125,6 +169,14 @@ async function createWindow() {
 			? `Your prompt library - ${folders[0].name}`
 			: "Your prompt library";
 		mainWindow?.setTitle(title);
+	});
+
+	mainWindow.webContents.on("context-menu", (_event, params) => {
+		if (!mainWindow) {
+			return;
+		}
+
+		buildContextMenu(mainWindow, params);
 	});
 }
 
