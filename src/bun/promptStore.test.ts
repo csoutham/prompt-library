@@ -221,6 +221,75 @@ describe("PromptStore", () => {
 		expect(state.lastFullSyncAt).toBe("2026-03-11T12:00:00.000Z");
 	});
 
+	test("marks pushed records as synced after CloudKit acknowledgement", async () => {
+		const store = new PromptStore(rootDir);
+		const folder = await store.createFolder("Outbound", null);
+		const prompt = await store.createPrompt(folder.id, "Outbound Prompt");
+		await store.savePrompt(prompt.id, "Outbound Prompt", "Ship me");
+
+		const plan = await store.buildCloudKitPushPlan();
+		const syncState = await store.acknowledgeCloudKitPushPlan(plan, {
+			databaseChangeToken: "db-token-3",
+		});
+
+		const snapshot = await store.exportSnapshot({ includeDeleted: true });
+		const syncedFolder = snapshot.folders.find((entry) => entry.id === folder.id)!;
+		const syncedPrompt = snapshot.prompts.find((entry) => entry.id === prompt.id)!;
+
+		expect(syncedFolder.syncStatus).toBe("synced");
+		expect(syncedFolder.cloudKitRecordName).toBe(`folder.${folder.id}`);
+		expect(syncedPrompt.syncStatus).toBe("synced");
+		expect(syncedPrompt.cloudKitRecordName).toBe(`prompt.${prompt.id}`);
+		expect(syncState.databaseChangeToken).toBe("db-token-3");
+	});
+
+	test("applies remote CloudKit records and creates conflict copies for prompts", async () => {
+		const store = new PromptStore(rootDir);
+		const folder = await store.createFolder("Local Folder", null);
+		const prompt = await store.createPrompt(folder.id, "Local Prompt");
+		const locallyEdited = await store.savePrompt(prompt.id, "Local Prompt", "Local draft");
+
+		const remoteFolder = folderToCloudKitRecord({
+			...folder,
+			name: "Remote Folder",
+			updatedAt: "2026-03-11T13:00:00.000Z",
+			lastSyncedAt: "2026-03-11T13:00:00.000Z",
+			syncStatus: "synced",
+			cloudKitRecordName: `folder.${folder.id}`,
+		});
+		const remotePrompt = promptToCloudKitRecord({
+			...locallyEdited,
+			title: "Remote Prompt",
+			bodyMarkdown: "Remote version",
+			updatedAt: "2026-03-11T13:05:00.000Z",
+			lastSyncedAt: "2026-03-11T13:05:00.000Z",
+			syncStatus: "synced",
+			cloudKitRecordName: `prompt.${locallyEdited.id}`,
+		});
+
+		const result = await store.applyCloudKitPullPayload({
+			folders: [remoteFolder],
+			prompts: [remotePrompt],
+			deletedRecords: [],
+		});
+
+		expect(result.appliedFolders).toBe(1);
+		expect(result.appliedPrompts).toBe(1);
+		expect(result.conflictCopiesCreated).toBe(1);
+
+		const refreshedFolder = (await store.listFolders()).find((entry) => entry.id === folder.id);
+		const refreshedPrompt = await store.getPrompt(prompt.id);
+		const snapshot = await store.exportSnapshot({ includeDeleted: true });
+		const conflictCopy = snapshot.prompts.find((entry) => entry.title === "Local Prompt (Conflict Copy)");
+
+		expect(refreshedFolder?.name).toBe("Remote Folder");
+		expect(refreshedPrompt?.title).toBe("Remote Prompt");
+		expect(refreshedPrompt?.bodyMarkdown.trim()).toBe("Remote version");
+		expect(refreshedPrompt?.syncStatus).toBe("synced");
+		expect(conflictCopy?.bodyMarkdown.trim()).toBe("Local draft");
+		expect(conflictCopy?.syncStatus).toBe("local");
+	});
+
 	test("skips invalid prompt files without crashing", async () => {
 		const store = new PromptStore(rootDir);
 		await store.bootstrap();

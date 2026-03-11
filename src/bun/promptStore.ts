@@ -9,7 +9,11 @@ import type {
 	PromptSummary,
 	RecordQueryOptions,
 } from "../shared/prompt-store";
-import type { CloudKitPushPlan } from "../shared/cloudkit";
+import type {
+	CloudKitPullPayload,
+	CloudKitPullResult,
+	CloudKitPushPlan,
+} from "../shared/cloudkit";
 import { CloudKitSyncService } from "./cloudKitSyncService";
 import { FilePromptRepository } from "./filePromptRepository";
 import { FileSyncStateStore } from "./syncStateStore";
@@ -113,5 +117,16 @@ export class PromptStore implements PromptRepository {
 		nextState: Partial<CloudKitSyncState> = {},
 	): Promise<CloudKitSyncState> {
 		return this.cloudKitSyncService.markSyncCompleted(nextState);
+	}
+
+	applyCloudKitPullPayload(payload: CloudKitPullPayload): Promise<CloudKitPullResult> {
+		return this.cloudKitSyncService.applyPullPayload(payload);
+	}
+
+	acknowledgeCloudKitPushPlan(
+		plan: CloudKitPushPlan,
+		nextState: Partial<CloudKitSyncState> = {},
+	): Promise<CloudKitSyncState> {
+		return this.cloudKitSyncService.acknowledgePushPlan(plan, nextState);
 	}
 }

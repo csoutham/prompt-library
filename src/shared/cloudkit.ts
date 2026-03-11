@@ -44,6 +44,7 @@ export type CloudKitDeleteRecord = {
 	recordType: typeof CLOUDKIT_FOLDER_RECORD_TYPE | typeof CLOUDKIT_PROMPT_RECORD_TYPE;
 	recordName: string;
 	zoneName: CloudKitRecordZoneName;
+	deletedAt: string;
 };
 
 export type CloudKitPushPlan = {
@@ -51,6 +52,19 @@ export type CloudKitPushPlan = {
 	foldersToSave: CloudKitFolderRecord[];
 	promptsToSave: CloudKitPromptRecord[];
 	recordsToDelete: CloudKitDeleteRecord[];
+};
+
+export type CloudKitPullPayload = {
+	folders: CloudKitFolderRecord[];
+	prompts: CloudKitPromptRecord[];
+	deletedRecords: CloudKitDeleteRecord[];
+};
+
+export type CloudKitPullResult = {
+	appliedFolders: number;
+	appliedPrompts: number;
+	appliedDeletes: number;
+	conflictCopiesCreated: number;
 };
 
 export function folderRecordName(folder: FolderRecord): string {
@@ -101,6 +115,7 @@ export function folderToCloudKitDelete(folder: FolderRecord): CloudKitDeleteReco
 		recordType: CLOUDKIT_FOLDER_RECORD_TYPE,
 		recordName: folderRecordName(folder),
 		zoneName: "prompt-library",
+		deletedAt: folder.deletedAt ?? folder.updatedAt,
 	};
 }
 
@@ -109,6 +124,7 @@ export function promptToCloudKitDelete(prompt: PromptRecord): CloudKitDeleteReco
 		recordType: CLOUDKIT_PROMPT_RECORD_TYPE,
 		recordName: promptRecordName(prompt),
 		zoneName: "prompt-library",
+		deletedAt: prompt.deletedAt ?? prompt.updatedAt,
 	};
 }
 
