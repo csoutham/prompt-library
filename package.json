@@ -1,6 +1,6 @@
 {
 	"name": "prompt-store",
-	"version": "0.9.10",
+	"version": "0.9.11",
 	"description": "Your prompt library is a local-first macOS prompt manager built with Electron, Bun, and React",
 	"main": "build/electron/main.js",
 	"author": "Chris Southam",

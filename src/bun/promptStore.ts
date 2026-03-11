@@ -4,9 +4,13 @@ import matter from "gray-matter";
 import type {
 	BootstrapPayload,
 	FolderRecord,
+	PromptRepository,
 	PromptLibrarySnapshot,
 	PromptRecord,
 	PromptSummary,
+	RecordQueryOptions,
+	SyncMetadata,
+	SyncStatus,
 } from "../shared/prompt-store";
 
 const FOLDERS_FILE = "folders.json";
@@ -23,18 +27,18 @@ type PromptFrontmatter = {
 	folderId: string;
 	createdAt: string;
 	updatedAt: string;
-};
+} & SyncMetadata;
 
 export class PromptStoreError extends Error {}
 
-export class PromptStore {
+export class PromptStore implements PromptRepository {
 	constructor(private readonly rootDir: string) {}
 
-	async bootstrap(): Promise<BootstrapPayload> {
+	async bootstrap(options?: RecordQueryOptions): Promise<BootstrapPayload> {
 		await this.ensureInitialized();
 		const [folders, prompts] = await Promise.all([
-			this.listFolders(),
-			this.listAllPrompts(),
+			this.listFolders(options),
+			this.listAllPrompts(options),
 		]);
 
 		return {
@@ -43,29 +47,29 @@ export class PromptStore {
 		};
 	}
 
-	async listFolders(): Promise<FolderRecord[]> {
+	async listFolders(options?: RecordQueryOptions): Promise<FolderRecord[]> {
 		await this.ensureInitialized();
-		return this.readFolders();
+		return this.readFolders(options);
 	}
 
-	async listPrompts(folderId: string): Promise<PromptSummary[]> {
-		await this.ensureFolderExists(folderId);
-		const prompts = await this.listAllPrompts();
+	async listPrompts(folderId: string, options?: RecordQueryOptions): Promise<PromptSummary[]> {
+		await this.ensureFolderExists(folderId, options);
+		const prompts = await this.listAllPrompts(options);
 		return prompts
 			.filter((prompt) => prompt.folderId === folderId)
 			.sort(sortPrompts)
 			.map(toPromptSummary);
 	}
 
-	async getPrompt(promptId: string): Promise<PromptRecord | null> {
+	async getPrompt(promptId: string, options?: RecordQueryOptions): Promise<PromptRecord | null> {
 		await this.ensureInitialized();
-		return this.readPromptFile(promptId);
+		return this.readPromptFile(promptId, options);
 	}
 
 	async createFolder(name: string, parentId: string | null): Promise<FolderRecord> {
 		await this.ensureInitialized();
 		const trimmedName = normalizeName(name, "New Folder");
-		const folders = await this.readFolders();
+		const folders = await this.readFolders({ includeDeleted: true });
 		if (parentId) {
 			const parentFolder = folders.find((folder) => folder.id === parentId);
 			if (!parentFolder) {
@@ -83,6 +87,7 @@ export class PromptStore {
 			parentId,
 			createdAt: now,
 			updatedAt: now,
+			...createSyncMetadata("local"),
 		};
 
 		folders.push(folder);
@@ -92,7 +97,7 @@ export class PromptStore {
 
 	async renameFolder(folderId: string, name: string): Promise<FolderRecord> {
 		await this.ensureInitialized();
-		const folders = await this.readFolders();
+		const folders = await this.readFolders({ includeDeleted: true });
 		const folder = folders.find((entry) => entry.id === folderId);
 		if (!folder) {
 			throw new PromptStoreError("Folder not found.");
@@ -100,14 +105,22 @@ export class PromptStore {
 
 		folder.name = normalizeName(name, folder.name);
 		folder.updatedAt = new Date().toISOString();
+		folder.syncStatus = nextSyncStatus(folder.syncStatus);
 		await this.writeFolders(folders);
 		return folder;
 	}
 
 	async deleteFolder(folderId: string): Promise<void> {
 		await this.ensureInitialized();
-		const folders = await this.readFolders();
-		const hasChildren = folders.some((folder) => folder.parentId === folderId);
+		const folders = await this.readFolders({ includeDeleted: true });
+		const folder = folders.find((entry) => entry.id === folderId && entry.deletedAt === null);
+		if (!folder) {
+			throw new PromptStoreError("Folder not found.");
+		}
+
+		const hasChildren = folders.some(
+			(entry) => entry.parentId === folderId && entry.deletedAt === null,
+		);
 		if (hasChildren) {
 			throw new PromptStoreError("Move or delete child folders before deleting this folder.");
 		}
@@ -118,23 +131,24 @@ export class PromptStore {
 			throw new PromptStoreError("Move or delete prompts before deleting this folder.");
 		}
 
-		const nextFolders = folders.filter((folder) => folder.id !== folderId);
-		if (nextFolders.length === folders.length) {
-			throw new PromptStoreError("Folder not found.");
-		}
+		const now = new Date().toISOString();
+		folder.deletedAt = now;
+		folder.updatedAt = now;
+		folder.syncStatus = nextSyncStatus(folder.syncStatus);
 
-		if (nextFolders.length === 0) {
-			const now = new Date().toISOString();
-			nextFolders.push({
+		const activeFolders = folders.filter((entry) => entry.deletedAt === null);
+		if (activeFolders.length === 0) {
+			activeFolders.push({
 				id: crypto.randomUUID(),
 				name: DEFAULT_FOLDER_NAME,
 				parentId: null,
 				createdAt: now,
 				updatedAt: now,
+				...createSyncMetadata("local"),
 			});
 		}
 
-		await this.writeFolders(nextFolders);
+		await this.writeFolders([...folders.filter((entry) => entry.deletedAt !== null), ...activeFolders]);
 	}
 
 	async createPrompt(folderId: string, title = "Untitled Prompt"): Promise<PromptRecord> {
@@ -147,6 +161,7 @@ export class PromptStore {
 			bodyMarkdown: "",
 			createdAt: now,
 			updatedAt: now,
+			...createSyncMetadata("local"),
 		};
 
 		await this.writePromptFile(prompt);
@@ -169,6 +184,7 @@ export class PromptStore {
 			title: normalizeName(title, existing.title),
 			bodyMarkdown,
 			updatedAt: new Date().toISOString(),
+			syncStatus: nextSyncStatus(existing.syncStatus),
 		};
 
 		await this.writePromptFile(prompt);
@@ -186,6 +202,7 @@ export class PromptStore {
 			...existing,
 			folderId,
 			updatedAt: new Date().toISOString(),
+			syncStatus: nextSyncStatus(existing.syncStatus),
 		};
 
 		await this.writePromptFile(prompt);
@@ -203,25 +220,25 @@ export class PromptStore {
 
 	async deletePrompt(promptId: string): Promise<void> {
 		await this.ensureInitialized();
-		const filePath = this.getPromptPath(promptId);
-		try {
-			await rm(filePath);
-		} catch (error) {
-			if (isMissingFile(error)) {
-				throw new PromptStoreError("Prompt not found.");
-			}
-			throw error;
+		const prompt = await this.readPromptFile(promptId, { includeDeleted: true });
+		if (!prompt || prompt.deletedAt !== null) {
+			throw new PromptStoreError("Prompt not found.");
 		}
+
+		prompt.deletedAt = new Date().toISOString();
+		prompt.updatedAt = prompt.deletedAt;
+		prompt.syncStatus = nextSyncStatus(prompt.syncStatus);
+		await this.writePromptFile(prompt);
 	}
 
-	async searchPrompts(query: string): Promise<PromptSummary[]> {
+	async searchPrompts(query: string, options?: RecordQueryOptions): Promise<PromptSummary[]> {
 		await this.ensureInitialized();
 		const normalized = query.trim().toLowerCase();
 		if (!normalized) {
 			return [];
 		}
 
-		const prompts = await this.listAllPrompts();
+		const prompts = await this.listAllPrompts(options);
 		return prompts
 			.filter((prompt) => {
 				const haystack = `${prompt.title}\n${prompt.bodyMarkdown}`.toLowerCase();
@@ -269,6 +286,7 @@ export class PromptStore {
 						parentId: null,
 						createdAt: now,
 						updatedAt: now,
+						...createSyncMetadata("local"),
 					},
 				],
 			};
@@ -285,24 +303,28 @@ export class PromptStore {
 				parentId: null,
 				createdAt: now,
 				updatedAt: now,
+				...createSyncMetadata("local"),
 			});
 			await this.writeFolders(folders);
 		}
 	}
 
-	private async ensureFolderExists(folderId: string): Promise<void> {
-		const folders = await this.readFolders();
+	private async ensureFolderExists(folderId: string, options?: RecordQueryOptions): Promise<void> {
+		const folders = await this.readFolders(options);
 		if (!folders.some((folder) => folder.id === folderId)) {
 			throw new PromptStoreError("Folder not found.");
 		}
 	}
 
-	private async readFolders(): Promise<FolderRecord[]> {
+	private async readFolders(options?: RecordQueryOptions): Promise<FolderRecord[]> {
 		try {
 			const raw = await readFile(this.foldersPath, "utf8");
 			const parsed = JSON.parse(raw) as FolderManifest;
 			const folders = Array.isArray(parsed.folders) ? parsed.folders : [];
-			return folders.sort(sortFolders);
+			return folders
+				.map((folder) => normalizeFolderRecord(folder))
+				.filter((folder) => options?.includeDeleted || folder.deletedAt === null)
+				.sort(sortFolders);
 		} catch (error) {
 			if (isMissingFile(error)) {
 				return [];
@@ -321,17 +343,20 @@ export class PromptStore {
 		await writeFile(this.foldersPath, JSON.stringify(manifest, null, 2));
 	}
 
-	private async listAllPrompts(): Promise<PromptRecord[]> {
+	private async listAllPrompts(options?: RecordQueryOptions): Promise<PromptRecord[]> {
 		const entries = await readdir(this.promptsDir).catch(() => [] as string[]);
 		const promptFiles = entries.filter((entry) => entry.endsWith(".md"));
 		const prompts = await Promise.all(
-			promptFiles.map((entry) => this.readPromptFile(basename(entry, ".md"))),
+			promptFiles.map((entry) => this.readPromptFile(basename(entry, ".md"), options)),
 		);
 
 		return prompts.filter((prompt): prompt is PromptRecord => prompt !== null).sort(sortPrompts);
 	}
 
-	private async readPromptFile(promptId: string): Promise<PromptRecord | null> {
+	private async readPromptFile(
+		promptId: string,
+		options?: RecordQueryOptions,
+	): Promise<PromptRecord | null> {
 		try {
 			const raw = await readFile(this.getPromptPath(promptId), "utf8");
 			const parsed = matter(raw);
@@ -341,14 +366,24 @@ export class PromptStore {
 				return null;
 			}
 
-			return {
+			const prompt = normalizePromptRecord({
 				id: data.id,
 				title: normalizeName(data.title ?? "Untitled Prompt", "Untitled Prompt"),
 				folderId: data.folderId,
 				bodyMarkdown: parsed.content.replace(/^\n/, ""),
 				createdAt: data.createdAt,
 				updatedAt: data.updatedAt,
-			};
+				deletedAt: data.deletedAt ?? null,
+				lastSyncedAt: data.lastSyncedAt ?? null,
+				syncStatus: data.syncStatus,
+				cloudKitRecordName: data.cloudKitRecordName ?? null,
+			});
+
+			if (!options?.includeDeleted && prompt.deletedAt !== null) {
+				return null;
+			}
+
+			return prompt;
 		} catch (error) {
 			if (isMissingFile(error)) {
 				return null;
@@ -366,6 +401,10 @@ export class PromptStore {
 			folderId: prompt.folderId,
 			createdAt: prompt.createdAt,
 			updatedAt: prompt.updatedAt,
+			deletedAt: prompt.deletedAt,
+			lastSyncedAt: prompt.lastSyncedAt,
+			syncStatus: prompt.syncStatus,
+			cloudKitRecordName: prompt.cloudKitRecordName,
 		});
 		await writeFile(this.getPromptPath(prompt.id), raw);
 	}
@@ -404,6 +443,10 @@ function toPromptSummary(prompt: PromptRecord): PromptSummary {
 		folderId: prompt.folderId,
 		createdAt: prompt.createdAt,
 		updatedAt: prompt.updatedAt,
+		deletedAt: prompt.deletedAt,
+		lastSyncedAt: prompt.lastSyncedAt,
+		syncStatus: prompt.syncStatus,
+		cloudKitRecordName: prompt.cloudKitRecordName,
 		excerpt: excerptFromMarkdown(prompt.bodyMarkdown),
 	};
 }
@@ -419,6 +462,48 @@ function sortFolders(left: FolderRecord, right: FolderRecord): number {
 
 function sortPrompts(left: PromptRecord, right: PromptRecord): number {
 	return right.updatedAt.localeCompare(left.updatedAt);
+}
+
+function createSyncMetadata(syncStatus: SyncStatus): SyncMetadata {
+	return {
+		deletedAt: null,
+		lastSyncedAt: null,
+		syncStatus,
+		cloudKitRecordName: null,
+	};
+}
+
+function nextSyncStatus(current: SyncStatus): SyncStatus {
+	return current === "synced" ? "modified" : current;
+}
+
+function normalizeFolderRecord(folder: Partial<FolderRecord>): FolderRecord {
+	return {
+		id: folder.id ?? crypto.randomUUID(),
+		name: folder.name ?? DEFAULT_FOLDER_NAME,
+		parentId: folder.parentId ?? null,
+		createdAt: folder.createdAt ?? new Date().toISOString(),
+		updatedAt: folder.updatedAt ?? new Date().toISOString(),
+		deletedAt: folder.deletedAt ?? null,
+		lastSyncedAt: folder.lastSyncedAt ?? null,
+		syncStatus: folder.syncStatus ?? "local",
+		cloudKitRecordName: folder.cloudKitRecordName ?? null,
+	};
+}
+
+function normalizePromptRecord(prompt: Partial<PromptRecord>): PromptRecord {
+	return {
+		id: prompt.id ?? crypto.randomUUID(),
+		title: normalizeName(prompt.title ?? "Untitled Prompt", "Untitled Prompt"),
+		folderId: prompt.folderId ?? "",
+		bodyMarkdown: prompt.bodyMarkdown ?? "",
+		createdAt: prompt.createdAt ?? new Date().toISOString(),
+		updatedAt: prompt.updatedAt ?? new Date().toISOString(),
+		deletedAt: prompt.deletedAt ?? null,
+		lastSyncedAt: prompt.lastSyncedAt ?? null,
+		syncStatus: prompt.syncStatus ?? "local",
+		cloudKitRecordName: prompt.cloudKitRecordName ?? null,
+	};
 }
 
 function isMissingFile(error: unknown): boolean {

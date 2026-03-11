@@ -80,6 +80,17 @@ describe("PromptStore", () => {
 		expect(saved.title).toBe("My Prompt Title");
 	});
 
+	test("initializes sync metadata for new records", async () => {
+		const store = new PromptStore(rootDir);
+		const folder = await store.createFolder("Sync Ready", null);
+		const prompt = await store.createPrompt(folder.id, "Prompt");
+
+		expect(folder.syncStatus).toBe("local");
+		expect(folder.deletedAt).toBeNull();
+		expect(prompt.syncStatus).toBe("local");
+		expect(prompt.lastSyncedAt).toBeNull();
+	});
+
 	test("moves prompts between folders", async () => {
 		const store = new PromptStore(rootDir);
 		const source = await store.createFolder("Source", null);
@@ -109,6 +120,17 @@ describe("PromptStore", () => {
 
 		const folders = await store.listFolders();
 		expect(folders.some((entry) => entry.id === folder.id)).toBe(false);
+	});
+
+	test("soft deletes prompts and hides tombstones from active queries", async () => {
+		const store = new PromptStore(rootDir);
+		const folder = (await store.listFolders())[0]!;
+		const prompt = await store.createPrompt(folder.id, "Delete Me");
+		await store.deletePrompt(prompt.id);
+
+		expect(await store.getPrompt(prompt.id)).toBeNull();
+		const deleted = await store.getPrompt(prompt.id, { includeDeleted: true });
+		expect(deleted?.deletedAt).not.toBeNull();
 	});
 
 	test("skips invalid prompt files without crashing", async () => {

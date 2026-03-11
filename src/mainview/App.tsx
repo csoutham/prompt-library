@@ -1002,6 +1002,10 @@ function summarizePrompt(prompt: PromptRecord): PromptSummary {
 		folderId: prompt.folderId,
 		createdAt: prompt.createdAt,
 		updatedAt: prompt.updatedAt,
+		deletedAt: prompt.deletedAt,
+		lastSyncedAt: prompt.lastSyncedAt,
+		syncStatus: prompt.syncStatus,
+		cloudKitRecordName: prompt.cloudKitRecordName,
 		excerpt: prompt.bodyMarkdown.replace(/\s+/g, " ").trim().slice(0, 120),
 	};
 }
