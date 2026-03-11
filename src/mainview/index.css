@@ -115,6 +115,57 @@ select {
 	-webkit-app-region: no-drag;
 }
 
+.cloud-sync-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 9px;
+	min-height: 44px;
+	padding: 0 14px;
+	border: 1px solid rgba(98, 72, 46, 0.12);
+	border-radius: 999px;
+	background: linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(243, 233, 220, 0.9));
+	color: var(--text);
+	cursor: pointer;
+	transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.cloud-sync-pill span {
+	font-size: 0.84rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+}
+
+.cloud-sync-pill:hover {
+	transform: translateY(-1px);
+	border-color: rgba(126, 63, 27, 0.3);
+}
+
+.cloud-sync-pill--ready {
+	color: #2f6a35;
+	border-color: rgba(77, 135, 80, 0.2);
+	background: linear-gradient(180deg, rgba(238, 248, 239, 0.98), rgba(224, 241, 226, 0.92));
+}
+
+.cloud-sync-pill--active {
+	color: var(--accent-strong);
+	border-color: rgba(155, 77, 35, 0.22);
+	background: linear-gradient(180deg, rgba(255, 244, 235, 0.98), rgba(246, 228, 211, 0.92));
+}
+
+.cloud-sync-pill--error {
+	color: var(--danger);
+	border-color: rgba(177, 70, 62, 0.22);
+	background: linear-gradient(180deg, rgba(255, 241, 239, 0.98), rgba(247, 225, 221, 0.92));
+}
+
+.cloud-sync-pill--idle {
+	color: var(--muted);
+}
+
+.cloud-sync-pill__icon--spinning {
+	animation: cloud-sync-spin 1s linear infinite;
+}
+
 .app-frame {
 	display: grid;
 	grid-template-columns: 280px 340px minmax(0, 1fr);
@@ -491,6 +542,16 @@ kbd {
 	min-height: 420px;
 	resize: vertical;
 	line-height: 1.5;
+}
+
+@keyframes cloud-sync-spin {
+	from {
+		transform: rotate(0deg);
+	}
+
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 .prompt-card {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ArrowBendUpRight,
+	ArrowsClockwise,
 	CaretDown,
 	Check,
 	Copy,
@@ -12,6 +13,7 @@ import {
 	Trash,
 	UploadSimple,
 } from "@phosphor-icons/react";
+import type { CloudKitRuntimeStatus } from "../shared/cloudkit";
 import type {
 	FolderRecord,
 	PromptRecord,
@@ -87,6 +89,13 @@ function App() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [statusMessage, setStatusMessage] = useState("Local library ready");
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [cloudSyncStatus, setCloudSyncStatus] = useState<CloudKitRuntimeStatus>({
+		available: false,
+		accountStatus: "unknown",
+		syncInFlight: false,
+		lastSyncAt: null,
+		lastError: null,
+	});
 	const [dialog, setDialog] = useState<DialogState>(null);
 	const [dialogValue, setDialogValue] = useState("");
 	const [isSubmittingDialog, setIsSubmittingDialog] = useState(false);
@@ -97,6 +106,16 @@ function App() {
 
 	useEffect(() => {
 		void loadInitialState();
+	}, []);
+
+	useEffect(() => {
+		void refreshCloudSyncStatus();
+
+		const interval = window.setInterval(() => {
+			void refreshCloudSyncStatus();
+		}, 5000);
+
+		return () => window.clearInterval(interval);
 	}, []);
 
 	useEffect(() => {
@@ -253,10 +272,23 @@ function App() {
 				const prompt = await promptStoreApi.getPrompt(initialPromptId);
 				setSelectedPrompt(prompt);
 			}
+			await refreshCloudSyncStatus();
 		} catch (error) {
 			setErrorMessage(toMessage(error));
 		} finally {
 			setIsLoading(false);
+		}
+	}
+
+	async function refreshCloudSyncStatus() {
+		try {
+			const status = await promptStoreApi.cloudKitSyncStatus();
+			setCloudSyncStatus(status);
+		} catch (error) {
+			setCloudSyncStatus((current) => ({
+				...current,
+				lastError: toMessage(error),
+			}));
 		}
 	}
 
@@ -491,6 +523,16 @@ function App() {
 		}
 	}
 
+	async function triggerCloudSync() {
+		try {
+			await promptStoreApi.cloudKitSyncNow();
+			await refreshCloudSyncStatus();
+			setStatusMessage("Cloud sync requested");
+		} catch (error) {
+			setErrorMessage(toMessage(error));
+		}
+	}
+
 	async function handleSearchChange(query: string) {
 		setSearchQuery(query);
 		setErrorMessage(null);
@@ -558,6 +600,29 @@ function App() {
 					<h1>Your prompt library</h1>
 				</div>
 				<div className="app-topbar__meta">
+					<button
+						className={`cloud-sync-pill ${
+							cloudSyncStatus.lastError
+								? "cloud-sync-pill--error"
+								: cloudSyncStatus.syncInFlight
+									? "cloud-sync-pill--active"
+									: cloudSyncStatus.available
+										? "cloud-sync-pill--ready"
+										: "cloud-sync-pill--idle"
+						}`}
+						onClick={() => void triggerCloudSync()}
+						title={cloudSyncTooltip(cloudSyncStatus)}
+						aria-label={cloudSyncLabel(cloudSyncStatus)}
+					>
+						<ArrowsClockwise
+							className={`button__icon-svg ${
+								cloudSyncStatus.syncInFlight ? "cloud-sync-pill__icon--spinning" : ""
+							}`}
+							aria-hidden="true"
+							weight="bold"
+						/>
+						<span>{cloudSyncLabel(cloudSyncStatus)}</span>
+					</button>
 					<button
 						className="button button--icon"
 						aria-label="Export library"
@@ -1118,6 +1183,60 @@ function formatDateTime(value: string): string {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
+}
+
+function cloudSyncLabel(status: CloudKitRuntimeStatus): string {
+	if (status.syncInFlight) {
+		return "Syncing";
+	}
+
+	if (status.lastError) {
+		return "Sync error";
+	}
+
+	if (!status.available) {
+		return status.accountStatus === "noAccount" ? "No iCloud" : "Cloud offline";
+	}
+
+	if (status.lastSyncAt) {
+		return `Synced ${formatRelativeSyncTime(status.lastSyncAt)}`;
+	}
+
+	return "Cloud ready";
+}
+
+function cloudSyncTooltip(status: CloudKitRuntimeStatus): string {
+	const lines = [
+		cloudSyncLabel(status),
+		`Account: ${status.accountStatus}`,
+		status.lastSyncAt ? `Last sync: ${formatDateTime(status.lastSyncAt)}` : "Last sync: not yet",
+	];
+
+	if (status.lastError) {
+		lines.push(`Error: ${status.lastError}`);
+	}
+
+	return lines.join("\n");
+}
+
+function formatRelativeSyncTime(value: string): string {
+	const elapsedMs = Date.now() - new Date(value).getTime();
+	const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60000));
+
+	if (elapsedMinutes < 1) {
+		return "just now";
+	}
+
+	if (elapsedMinutes < 60) {
+		return `${elapsedMinutes}m ago`;
+	}
+
+	const elapsedHours = Math.round(elapsedMinutes / 60);
+	if (elapsedHours < 24) {
+		return `${elapsedHours}h ago`;
+	}
+
+	return formatTimestamp(value);
 }
 
 function sortFolders(left: FolderRecord, right: FolderRecord): number {
