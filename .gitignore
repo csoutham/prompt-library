@@ -5,3 +5,4 @@ release/
 artifacts/
 .DS_Store
 .idea/
+native/CloudKitBridge/.build/

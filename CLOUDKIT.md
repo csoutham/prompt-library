@@ -35,6 +35,9 @@ Current bridge commands:
 - `health`
 - `describeConfig`
 - `accountStatus`
+- `ensureZone`
+- `pullChanges`
+- `pushChanges`
 
 Build it with:
 
@@ -42,11 +45,20 @@ Build it with:
 bun run build:cloudkit-bridge
 ```
 
+## Runtime wiring
+
+Electron now owns a small runtime service at [cloudKitRuntime.ts](/Users/Chris/Work/Projects/Apps/PromptStore/macos/src/electron/cloudKitRuntime.ts) that:
+
+- checks iCloud account status
+- ensures the private custom zone exists
+- pulls remote changes into the local store
+- builds outbound save and delete plans from local changes
+- pushes those changes back to CloudKit
+
 ## Important implementation note
 
-Electron does not give this app direct access to Apple's native CloudKit framework by itself. The remaining implementation work in the bridge is adding commands that can:
+Electron still does not get direct CloudKit access by itself. The remaining implementation work is mostly:
 
-- check iCloud account status
-- fetch changes from the private database
-- push save and delete operations
-- return change tokens for incremental sync
+- validating live signed builds against the private database
+- deciding how much sync status to expose in the renderer UI
+- expanding the bridge if CloudKit-specific error handling or subscriptions become necessary

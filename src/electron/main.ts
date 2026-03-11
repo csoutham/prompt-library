@@ -14,7 +14,9 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { CloudKitBridgeClient } from "./cloudKitBridge";
+import { CloudKitRuntimeService } from "./cloudKitRuntime";
 import { PromptStore, PromptStoreError } from "../bun/promptStore";
+import type { CloudKitRuntimeStatus } from "../shared/cloudkit";
 import type {
 	FolderRecord,
 	PromptLibrarySnapshot,
@@ -30,6 +32,7 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let promptStore: PromptStore;
 let cloudKitBridge: CloudKitBridgeClient;
+let cloudKitRuntime: CloudKitRuntimeService;
 type TrayMenuItem = MenuItemConstructorOptions;
 
 type PromptApi = {
@@ -56,6 +59,8 @@ type PromptApi = {
 	cloudKitHealth: () => Promise<{ id: string; ok: boolean; result?: Record<string, string>; error?: string }>;
 	cloudKitDescribeConfig: () => Promise<{ id: string; ok: boolean; result?: Record<string, string>; error?: string }>;
 	cloudKitAccountStatus: () => Promise<{ id: string; ok: boolean; result?: Record<string, string>; error?: string }>;
+	cloudKitSyncNow: () => Promise<CloudKitRuntimeStatus>;
+	cloudKitSyncStatus: () => Promise<CloudKitRuntimeStatus>;
 };
 
 function trayIconPath() {
@@ -283,41 +288,49 @@ const promptApi: PromptApi = {
 	createFolder: async (name, parentId) => {
 		const folder = await promptStore.createFolder(name, parentId);
 		await refreshTrayMenu();
+		cloudKitRuntime.scheduleSync();
 		return folder;
 	},
 	renameFolder: async (folderId, name) => {
 		const folder = await promptStore.renameFolder(folderId, name);
 		await refreshTrayMenu();
+		cloudKitRuntime.scheduleSync();
 		return folder;
 	},
 	deleteFolder: async (folderId) => {
 		await promptStore.deleteFolder(folderId);
 		await refreshTrayMenu();
+		cloudKitRuntime.scheduleSync();
 		return { deleted: true as const };
 	},
 	createPrompt: async (folderId, title) => {
 		const prompt = await promptStore.createPrompt(folderId, title);
 		await refreshTrayMenu();
+		cloudKitRuntime.scheduleSync();
 		return prompt;
 	},
 	savePrompt: async (promptId, title, bodyMarkdown) => {
 		const prompt = await promptStore.savePrompt(promptId, title, bodyMarkdown);
 		await refreshTrayMenu();
+		cloudKitRuntime.scheduleSync();
 		return prompt;
 	},
 	movePrompt: async (promptId, folderId) => {
 		const prompt = await promptStore.movePrompt(promptId, folderId);
 		await refreshTrayMenu();
+		cloudKitRuntime.scheduleSync();
 		return prompt;
 	},
 	renamePrompt: async (promptId, title) => {
 		const prompt = await promptStore.renamePrompt(promptId, title);
 		await refreshTrayMenu();
+		cloudKitRuntime.scheduleSync();
 		return prompt;
 	},
 	deletePrompt: async (promptId) => {
 		await promptStore.deletePrompt(promptId);
 		await refreshTrayMenu();
+		cloudKitRuntime.scheduleSync();
 		return { deleted: true as const };
 	},
 	searchPrompts: async (query) => promptStore.searchPrompts(query),
@@ -356,17 +369,24 @@ const promptApi: PromptApi = {
 		const snapshot = JSON.parse(raw) as PromptLibrarySnapshot;
 		await promptStore.importSnapshot(snapshot);
 		await refreshTrayMenu();
+		cloudKitRuntime.scheduleSync();
 		return { imported: true as const };
 	},
 	cloudKitHealth: async () => cloudKitBridge.healthCheck(),
 	cloudKitDescribeConfig: async () => cloudKitBridge.describeConfig(),
 	cloudKitAccountStatus: async () => cloudKitBridge.accountStatus(),
+	cloudKitSyncNow: async () => {
+		await cloudKitRuntime.syncNow();
+		return cloudKitRuntime.getStatus();
+	},
+	cloudKitSyncStatus: async () => cloudKitRuntime.getStatus(),
 };
 
 app.whenReady().then(async () => {
 	app.setName("Your Prompt Library");
 	promptStore = new PromptStore(join(app.getPath("userData"), "library"));
 	cloudKitBridge = new CloudKitBridgeClient();
+	cloudKitRuntime = new CloudKitRuntimeService(promptStore, cloudKitBridge);
 	for (const [channel, handler] of Object.entries(promptApi)) {
 		ipcMain.handle(`prompt-store:${channel}`, async (_event, ...args) => {
 			const invoke = handler as (...parameters: unknown[]) => Promise<unknown>;
@@ -376,6 +396,7 @@ app.whenReady().then(async () => {
 	buildApplicationMenu();
 	await createWindow();
 	createTray();
+	cloudKitRuntime.scheduleSync(250);
 });
 
 app.on("activate", async () => {

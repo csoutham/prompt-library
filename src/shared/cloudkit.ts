@@ -68,6 +68,14 @@ export type CloudKitPullResult = {
 	conflictCopiesCreated: number;
 };
 
+export type CloudKitRuntimeStatus = {
+	available: boolean;
+	accountStatus: string;
+	syncInFlight: boolean;
+	lastSyncAt: string | null;
+	lastError: string | null;
+};
+
 export function folderRecordName(folder: FolderRecord): string {
 	return folder.cloudKitRecordName ?? `folder.${folder.id}`;
 }

@@ -24,4 +24,6 @@ export const promptStoreApi = {
 	cloudKitHealth: () => window.promptStore.cloudKitHealth(),
 	cloudKitDescribeConfig: () => window.promptStore.cloudKitDescribeConfig(),
 	cloudKitAccountStatus: () => window.promptStore.cloudKitAccountStatus(),
+	cloudKitSyncNow: () => window.promptStore.cloudKitSyncNow(),
+	cloudKitSyncStatus: () => window.promptStore.cloudKitSyncStatus(),
 };

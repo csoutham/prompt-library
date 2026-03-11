@@ -3,12 +3,22 @@ import { existsSync } from "node:fs";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { join } from "node:path";
 import { app } from "electron";
-import type {
+import {
 	CloudKitBridgeCommand,
 	CloudKitBridgeRequest,
 	CloudKitBridgeResponse,
+	parseBridgePullResponse,
+	parseBridgePushResponse,
+	serializePushPlan,
+	serializeSyncState,
 } from "../shared/cloudkit-bridge";
 import { CLOUDKIT_DEFAULTS } from "../shared/cloudkit-config";
+import type { CloudKitPushPlan } from "../shared/cloudkit";
+import type { CloudKitSyncState } from "../shared/prompt-store";
+import type {
+	CloudKitBridgePullResponse,
+	CloudKitBridgePushResponse,
+} from "../shared/cloudkit-bridge";
 
 type PendingRequest = {
 	resolve: (response: CloudKitBridgeResponse) => void;
@@ -36,6 +46,39 @@ export class CloudKitBridgeClient {
 		return this.send("accountStatus", {
 			containerId: CLOUDKIT_DEFAULTS.containerId,
 		});
+	}
+
+	async ensureZone() {
+		return this.send("ensureZone", {
+			containerId: CLOUDKIT_DEFAULTS.containerId,
+			zoneName: CLOUDKIT_DEFAULTS.zoneName,
+		});
+	}
+
+	async pullChanges(syncState: CloudKitSyncState): Promise<CloudKitBridgePullResponse> {
+		const response = await this.send("pullChanges", {
+			containerId: CLOUDKIT_DEFAULTS.containerId,
+			zoneName: CLOUDKIT_DEFAULTS.zoneName,
+			syncStateJson: serializeSyncState(syncState),
+		});
+		const payloadJson = response.result?.payloadJson;
+		if (!payloadJson) {
+			throw new Error("CloudKit bridge did not return pull payload.");
+		}
+		return parseBridgePullResponse(payloadJson);
+	}
+
+	async pushChanges(plan: CloudKitPushPlan): Promise<CloudKitBridgePushResponse> {
+		const response = await this.send("pushChanges", {
+			containerId: CLOUDKIT_DEFAULTS.containerId,
+			zoneName: CLOUDKIT_DEFAULTS.zoneName,
+			planJson: serializePushPlan(plan),
+		});
+		const payloadJson = response.result?.payloadJson;
+		if (!payloadJson) {
+			throw new Error("CloudKit bridge did not return push payload.");
+		}
+		return parseBridgePushResponse(payloadJson);
 	}
 
 	async dispose() {

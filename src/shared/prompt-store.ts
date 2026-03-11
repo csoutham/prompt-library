@@ -177,6 +177,26 @@ export type PromptStoreRpcSchema = {
 					error?: string;
 				};
 			};
+			cloudKitSyncNow: {
+				params: undefined;
+				response: {
+					available: boolean;
+					accountStatus: string;
+					syncInFlight: boolean;
+					lastSyncAt: string | null;
+					lastError: string | null;
+				};
+			};
+			cloudKitSyncStatus: {
+				params: undefined;
+				response: {
+					available: boolean;
+					accountStatus: string;
+					syncInFlight: boolean;
+					lastSyncAt: string | null;
+					lastError: string | null;
+				};
+			};
 		};
 		messages: {};
 	};

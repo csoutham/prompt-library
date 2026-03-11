@@ -46,6 +46,20 @@ declare global {
 				result?: Record<string, string>;
 				error?: string;
 			}>;
+			cloudKitSyncNow: () => Promise<{
+				available: boolean;
+				accountStatus: string;
+				syncInFlight: boolean;
+				lastSyncAt: string | null;
+				lastError: string | null;
+			}>;
+			cloudKitSyncStatus: () => Promise<{
+				available: boolean;
+				accountStatus: string;
+				syncInFlight: boolean;
+				lastSyncAt: string | null;
+				lastError: string | null;
+			}>;
 		};
 	}
 }
