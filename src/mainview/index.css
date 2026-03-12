@@ -338,9 +338,7 @@ kbd {
 }
 
 .folder-tree__row {
-	display: flex;
-	align-items: center;
-	gap: 8px;
+	display: block;
 }
 
 .folder-tree__children {
@@ -355,7 +353,7 @@ kbd {
 	align-items: center;
 	justify-content: space-between;
 	gap: 10px;
-	flex: 1;
+	width: 100%;
 	border: 0;
 	border-radius: 14px;
 	padding: 10px 12px;
@@ -364,6 +362,14 @@ kbd {
 	text-align: left;
 	cursor: pointer;
 	font-size: 0.9rem;
+}
+
+.folder-tree__item-meta {
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+	flex-shrink: 0;
 }
 
 .folder-tree__item-label {
@@ -406,7 +412,7 @@ kbd {
 	transition: opacity 140ms ease, transform 140ms ease;
 }
 
-.folder-tree__row:hover .folder-tree__actions,
+.folder-tree__item:hover .folder-tree__actions,
 .folder-tree__row--active .folder-tree__actions {
 	opacity: 1;
 	pointer-events: auto;

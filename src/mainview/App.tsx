@@ -995,41 +995,52 @@ function renderFolderTree(
 							<span className="folder-tree__dot" />
 							<span>{folder.name}</span>
 						</span>
-						<span className="folder-tree__count">
-							{folderPromptCounts.get(folder.id) ?? 0}
+						<span className="folder-tree__item-meta">
+							<span className="folder-tree__actions">
+								{folder.parentId === null ? (
+									<button
+										className="folder-tree__action"
+										aria-label={`Create subfolder in ${folder.name}`}
+										title={`Create subfolder in ${folder.name}`}
+										onClick={(event) => {
+											event.stopPropagation();
+											onCreateChild(folder);
+										}}
+									>
+										<FolderSimplePlus
+											className="button__icon-svg"
+											aria-hidden="true"
+										/>
+									</button>
+								) : null}
+								<button
+									className="folder-tree__action"
+									aria-label={`Rename ${folder.name}`}
+									title={`Rename ${folder.name}`}
+									onClick={(event) => {
+										event.stopPropagation();
+										onRename(folder);
+									}}
+								>
+									<PencilSimple className="button__icon-svg" aria-hidden="true" />
+								</button>
+								<button
+									className="folder-tree__action folder-tree__action--danger"
+									aria-label={`Delete ${folder.name}`}
+									title={`Delete ${folder.name}`}
+									onClick={(event) => {
+										event.stopPropagation();
+										onDelete(folder);
+									}}
+								>
+									<Trash className="button__icon-svg" aria-hidden="true" />
+								</button>
+							</span>
+							<span className="folder-tree__count">
+								{folderPromptCounts.get(folder.id) ?? 0}
+							</span>
 						</span>
 					</button>
-					<div className="folder-tree__actions">
-						{folder.parentId === null ? (
-							<button
-								className="folder-tree__action"
-								aria-label={`Create subfolder in ${folder.name}`}
-								title={`Create subfolder in ${folder.name}`}
-								onClick={() => onCreateChild(folder)}
-							>
-								<FolderSimplePlus
-									className="button__icon-svg"
-									aria-hidden="true"
-								/>
-							</button>
-						) : null}
-						<button
-							className="folder-tree__action"
-							aria-label={`Rename ${folder.name}`}
-							title={`Rename ${folder.name}`}
-							onClick={() => onRename(folder)}
-						>
-							<PencilSimple className="button__icon-svg" aria-hidden="true" />
-						</button>
-						<button
-							className="folder-tree__action folder-tree__action--danger"
-							aria-label={`Delete ${folder.name}`}
-							title={`Delete ${folder.name}`}
-							onClick={() => onDelete(folder)}
-						>
-							<Trash className="button__icon-svg" aria-hidden="true" />
-						</button>
-					</div>
 				</div>
 				<div className="folder-tree__children">
 					{renderFolderTree(
