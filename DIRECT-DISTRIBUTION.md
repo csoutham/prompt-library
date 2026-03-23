@@ -24,6 +24,11 @@ If the following environment variables are also set, the script will now notaris
 
 Without those variables, the build is still signed but notarisation and DMG stapling are skipped.
 
+At the end of the script, it also runs the release checks that matter:
+
+- `xcrun stapler validate` against the DMG
+- `spctl -a -t exec -vv` against the built app bundle
+
 ## GitHub Actions automation
 
 The workflow at [direct-release.yml](/Users/Chris/Work/Projects/Apps/PromptStore/.github/workflows/direct-release.yml) builds and uploads direct-download artefacts.

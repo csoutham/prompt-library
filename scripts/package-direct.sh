@@ -32,6 +32,17 @@ function notarise_and_staple_dmg() {
 	xcrun stapler staple "$dmg_path"
 }
 
+function validate_direct_artifacts() {
+	local dmg_path="$1"
+	local app_path="$2"
+
+	echo "Validating stapled DMG: $dmg_path"
+	xcrun stapler validate "$dmg_path"
+
+	echo "Validating notarized app bundle: $app_path"
+	spctl -a -t exec -vv "$app_path"
+}
+
 echo "Building direct macOS distribution..."
 (
 	cd "$ROOT_DIR"
@@ -43,6 +54,13 @@ DMG_PATHS=("${(@f)$(find "$RELEASE_DIR" -maxdepth 1 -name '*.dmg' | sort)}")
 for dmg_path in "${DMG_PATHS[@]}"; do
 	[[ -n "$dmg_path" ]] || continue
 	notarise_and_staple_dmg "$dmg_path"
+done
+
+APP_PATH="$RELEASE_DIR/mac-arm64/Your Prompt Library.app"
+
+for dmg_path in "${DMG_PATHS[@]}"; do
+	[[ -n "$dmg_path" ]] || continue
+	validate_direct_artifacts "$dmg_path" "$APP_PATH"
 done
 
 echo "Created direct distribution artefacts:"
