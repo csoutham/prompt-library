@@ -1,6 +1,6 @@
 # Your Prompt Library
 
-`v1.0.2`
+`v1.1.0`
 
 Your Prompt Library is a local-first macOS desktop app for collecting AI prompts in folders. It is built with Electron, Bun, React, and a file-backed Markdown store so prompts stay readable and portable on disk.
 
@@ -10,25 +10,22 @@ This version has been approved for distribution on the Mac App Store and is now 
 
 - [Your Prompt Library on the Mac App Store](https://apps.apple.com/app/your-prompt-library/id6760317091)
 
-## What ships in v1.0.2
+## What ships in v1.1.0
 
 - Folder tree with parent and child folders
-- Folder hover actions now sit inline within the full-width folder row, to the left of the prompt count
-- Folder hover actions now stay hidden until hover, even for the currently selected folder
-- Prompt files now load safely even when YAML frontmatter dates are parsed back as native `Date` objects
-- Tray and app menu actions now recreate the main window safely after it has been closed
-- The Window menu now includes a direct way to reopen the main window
 - Prompt list for the selected folder
 - Markdown editor with autosave
 - Search across prompt titles and contents
 - Copy prompt content instantly
 - Import and export library snapshots as JSON
+- Automatic exports to a chosen folder on an hourly, 6-hourly, daily, or weekly schedule
+- Rolling snapshot mode and timestamped backup mode with retention
 - Menubar access for browsing folders and copying prompts
 - Native macOS edit menu support for text fields
 - Electron Builder packaging for local builds and TestFlight submission
 - File-backed local storage under the app's user-data directory
 
-Cloud sync is intentionally not part of the current release. For now, moving data between devices is handled with import and export.
+Cloud sync is intentionally not part of the current release. For now, moving data between devices is handled with import, export, and optional automatic backup exports into a synced folder such as Dropbox.
 
 ## Development
 
