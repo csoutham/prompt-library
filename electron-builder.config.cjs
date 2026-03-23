@@ -1,3 +1,6 @@
+const buildChannel = process.env.BUILD_CHANNEL ?? "local";
+const isDirectBuild = buildChannel === "direct";
+
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
 	appId: "com.cjsoutham.promptlibrary",
@@ -13,11 +16,15 @@ module.exports = {
 		"package.json",
 	],
 	asar: true,
+	afterSign: isDirectBuild ? "scripts/notarize.cjs" : undefined,
 	mac: {
-		target: ["dir"],
+		target: isDirectBuild ? ["dmg", "zip"] : ["dir"],
 		category: "public.app-category.productivity",
 		icon: "assets/AppIcon.icns",
 		minimumSystemVersion: "12.0",
+		hardenedRuntime: isDirectBuild,
+		entitlements: isDirectBuild ? "config/entitlements.mac.plist" : undefined,
+		entitlementsInherit: isDirectBuild ? "config/entitlements.mac.inherit.plist" : undefined,
 		extendInfo: {
 			ITSAppUsesNonExemptEncryption: false,
 		},

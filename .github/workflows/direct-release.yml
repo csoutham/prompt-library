@@ -1,0 +1,60 @@
+name: Direct macOS release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-direct:
+    runs-on: macos-15
+    env:
+      CSC_LINK: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_P12_BASE64 }}
+      CSC_KEY_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Validate release tag matches package version
+        if: github.event_name == 'release'
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          if [[ "$TAG_NAME" != "v$VERSION" ]]; then
+            echo "Release tag $TAG_NAME does not match package version v$VERSION" >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build signed direct distribution
+        run: bun run package:direct
+
+      - name: Upload workflow artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: direct-macos-release
+          path: |
+            release/*.dmg
+            release/*.dmg.blockmap
+            release/*.zip
+            release/*.zip.blockmap
+
+      - name: Attach artefacts to GitHub release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.dmg
+            release/*.dmg.blockmap
+            release/*.zip
+            release/*.zip.blockmap

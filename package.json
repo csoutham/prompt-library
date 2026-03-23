@@ -18,6 +18,8 @@
 		"build:electron": "esbuild src/electron/main.ts src/electron/preload.ts --bundle --platform=node --format=cjs --outdir=build/electron --external:electron",
 		"build": "bun run build:renderer && bun run build:electron && electron-builder --config electron-builder.config.cjs --mac dir",
 		"build:stable": "bun run build",
+		"build:direct": "bun run build:renderer && bun run build:electron && BUILD_CHANNEL=direct electron-builder --config electron-builder.config.cjs --mac dmg zip",
+		"package:direct": "./scripts/package-direct.sh",
 		"build:testflight": "bun run build:renderer && bun run build:electron && electron-builder --config electron-builder.config.cjs --mac mas",
 		"package:testflight": "./scripts/package-testflight.sh",
 		"test": "bun test"
@@ -36,6 +38,7 @@
 		"@types/react": "^18.3.12",
 		"@types/react-dom": "^18.3.1",
 		"@vitejs/plugin-react": "^4.3.4",
+		"@electron/notarize": "^3.1.0",
 		"autoprefixer": "^10.4.20",
 		"concurrently": "^9.1.0",
 		"electron": "^37.10.3",
