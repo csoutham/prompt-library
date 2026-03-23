@@ -58,6 +58,14 @@ bun run test
 bun run build
 ```
 
+## Direct download package
+
+```bash
+bun run package:direct
+```
+
+For signed and notarised direct-download builds plus GitHub Release automation, see [DIRECT-DISTRIBUTION.md](/Users/Chris/Work/Projects/Apps/PromptStore/macos/DIRECT-DISTRIBUTION.md).
+
 ## TestFlight package
 
 ```bash
