@@ -616,13 +616,15 @@ function App() {
 				</div>
 				<div className="app-topbar__meta">
 					<button
-						className="button"
+						className="button button--icon"
 						aria-label="Automatic exports"
 						title="Automatic exports"
 						onClick={() => void openAutoExportDialog()}
 					>
-						<ClockCounterClockwise className="button__icon-inline" aria-hidden="true" />
-						Automatic Exports
+						<ClockCounterClockwise
+							className="button__icon-svg button__icon-svg--large"
+							aria-hidden="true"
+						/>
 					</button>
 					<button
 						className="button button--icon"
