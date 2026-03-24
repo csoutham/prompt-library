@@ -9,6 +9,7 @@ Your Prompt Library is a local-first macOS desktop app for collecting AI prompts
 This version has been approved for distribution on the Mac App Store and is now available here:
 
 - [Your Prompt Library on the Mac App Store](https://apps.apple.com/app/your-prompt-library/id6760317091)
+- [Latest direct download release on GitHub](https://github.com/csoutham/your-prompt-library/releases/latest)
 
 ## What ships in v1.1.0
 
@@ -50,9 +51,9 @@ bun run build
 bun run package:direct
 ```
 
-For signed and notarised direct-download builds plus GitHub Release automation, see [DIRECT-DISTRIBUTION.md](/Users/Chris/Work/Projects/Apps/PromptStore/macos/DIRECT-DISTRIBUTION.md).
+For signed and notarised direct-download builds plus GitHub Release automation, see [DIRECT-DISTRIBUTION.md](DIRECT-DISTRIBUTION.md).
 
-To populate the required GitHub Actions secrets for direct releases, use [setup-direct-release-secrets.sh](/Users/Chris/Work/Projects/Apps/PromptStore/macos/scripts/setup-direct-release-secrets.sh).
+To populate the required GitHub Actions secrets for direct releases, use [setup-direct-release-secrets.sh](scripts/setup-direct-release-secrets.sh).
 
 Version bumps pushed to `main` automatically publish the matching GitHub Release for direct download.
 
